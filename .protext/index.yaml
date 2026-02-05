@@ -26,3 +26,9 @@ extractions:
     triggers: [skill, definition, description, frontmatter]
     summary: "Main skill definition and instructions"
     tokens: ~800
+
+  skills-checklist:
+    source: docs/SKILLS-CHECKLIST.md
+    triggers: [checklist, cross-platform, compatibility, portable, cursor, copilot, cline, aider, windsurf]
+    summary: "Cross-platform skills best practices, compatibility matrix, validation checklist"
+    tokens: ~1500
