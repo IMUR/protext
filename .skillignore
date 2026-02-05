@@ -1,0 +1,11 @@
+# Files excluded from skill packaging
+# Only SKILL.md, scripts/, references/ should be packaged
+
+.archive/
+.protext/
+.git/
+.gitignore
+.skillignore
+docs/
+CLAUDE.md
+PROTEXT.md

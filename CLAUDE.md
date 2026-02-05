@@ -49,12 +49,14 @@ python3 scripts/protext_status.py /path/to/project
 
 ### Deploying Updates
 
-```bash
-# Copy to local skills directory
-cp -r . ~/.agent/skills/local/protext/
+This repo is a dev project containing non-skill files (docs/, .protext/, CLAUDE.md, .archive/). Deploy only the skill subset:
 
-# Or package for distribution
-python3 ~/.claude/skills/skill-creator/scripts/package_skill.py .
+```bash
+# Copy skill files only to local skills directory
+rsync -av --include='SKILL.md' --include='scripts/***' --include='references/***' --exclude='*' . ~/.agent/skills/local/protext/
+
+# Or package from the clean deploy copy
+python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/local/protext/
 ```
 
 ---

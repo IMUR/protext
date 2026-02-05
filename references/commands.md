@@ -2,6 +2,20 @@
 
 All protext commands with syntax, examples, and natural language alternatives.
 
+## Table of Contents
+
+1. [/protext (Primary Command)](#protext-primary-command)
+2. [protext init](#protext-init)
+3. [protext status](#protext-status)
+4. [protext scope](#protext-scope)
+5. [protext handoff](#protext-handoff)
+6. [protext extract](#protext-extract)
+7. [protext refresh](#protext-refresh)
+8. [Error Messages](#error-messages)
+9. [Quick Reference Card](#quick-reference-card)
+
+---
+
 ## Command Summary
 
 | Command | Purpose | Shorthand |

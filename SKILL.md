@@ -89,6 +89,8 @@ Last: [summary] | Next: [suggested] | Caution: [warnings]
 - "Show me the project context"
 - "What's the current state?"
 
+**If no PROTEXT.md exists:** Inform the user and offer to run `protext init` to bootstrap one. Do not fail silently.
+
 ---
 
 ### `protext init`
@@ -205,8 +207,8 @@ Scope file format (`.protext/scopes/ops.md`):
 Infrastructure management, service health, deployment.
 
 ## Key Resources
-- Caddy config: /etc/caddy/Caddyfile
-- Docker services: /mnt/ops/docker/
+- [Service config paths]
+- [Key infrastructure locations]
 
 ## Current Priorities
 1. [Priority 1]
@@ -302,11 +304,14 @@ Protext complements but doesn't replace:
 
 ## Scripts
 
-See `scripts/` for automation:
-- `init_protext.py` — Bootstrap protext in a project
-- `protext_status.py` — Display current state
+Requires **Python 3.8+**. No external packages needed (yaml parsed with fallback).
+
+- `scripts/init_protext.py` — Bootstrap protext in a project
+- `scripts/protext_status.py` — Display current state
 
 ## Reference Files
 
-- `references/formats.md` — Complete format specifications
-- `references/commands.md` — Command syntax and examples
+Consult these only when deeper detail is needed:
+
+- `references/formats.md` — Read when creating or editing PROTEXT.md, index.yaml, handoff.md, or scope files. Contains complete templates and field guidelines.
+- `references/commands.md` — Read when implementing command handling or troubleshooting. Contains full syntax, flags, error messages, and natural language alternatives.
