@@ -1,0 +1,22 @@
+# Protext dev project
+
+# Packaged skill output
+*.skill
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Protext runtime (generated per-project, not part of skill source)
+# These would only exist if testing protext on this repo itself
+.protext/extractions.log
