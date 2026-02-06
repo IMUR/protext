@@ -32,7 +32,7 @@ from pathlib import Path
 import re
 
 
-def extract_project_info(claude_md_path: Path) -> dict:
+def extract_project_info(claude_md_path: Path, project_path: Path = None) -> dict:
     """Extract key information from existing CLAUDE.md."""
     info = {
         "name": "Unknown Project",
@@ -41,15 +41,22 @@ def extract_project_info(claude_md_path: Path) -> dict:
         "key_paths": [],
     }
 
+    # Primary: directory name (most reliable, avoids "CLAUDE.md" heading bug)
+    if project_path:
+        info["name"] = project_path.name.replace("-", " ").replace("_", " ").title()
+
     if not claude_md_path.exists():
         return info
 
     content = claude_md_path.read_text()
 
-    # Extract project name from first heading or title
+    # Override with CLAUDE.md heading only if it looks like a real project name
+    skip_names = {"claude.md", "readme.md", "readme", "overview", "about", "introduction"}
     title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
     if title_match:
-        info["name"] = title_match.group(1).strip()
+        candidate = title_match.group(1).strip()
+        if candidate.lower() not in skip_names:
+            info["name"] = candidate
 
     # Extract identity/purpose
     purpose_match = re.search(
@@ -308,7 +315,7 @@ def handle_existing_update(project_path: Path, tier: str) -> bool:
     protext_md = project_path / "PROTEXT.md"
     protext_dir = project_path / ".protext"
 
-    info = extract_project_info(claude_md)
+    info = extract_project_info(claude_md, project_path)
     extractions = detect_docs_structure(project_path)
 
     print(f"Updating protext (tier: {tier})...")
@@ -389,7 +396,7 @@ def init_protext(project_path: Path, tier: str = "advanced",
 
     # Extract info from existing CLAUDE.md
     claude_md = project_path / "CLAUDE.md"
-    info = extract_project_info(claude_md)
+    info = extract_project_info(claude_md, project_path)
 
     # Detect docs for extraction index
     extractions = detect_docs_structure(project_path)
