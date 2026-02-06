@@ -16,6 +16,13 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.agent/
+.archive/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+
 
 # Protext runtime (generated per-project, not part of skill source)
 # These would only exist if testing protext on this repo itself

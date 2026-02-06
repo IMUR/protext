@@ -7,12 +7,25 @@ CLAUDE.md and creating PROTEXT.md with the full .protext/ structure.
 
 Usage:
     python init_protext.py <project-path> [--tier beginner|intermediate|advanced]
+                                          [--existing archive|replace|update]
 
 Default tier: advanced (full features)
+
+When PROTEXT.md or .protext/ already exist, the --existing flag is required:
+    archive  - Date-stamp existing artifacts to .protext/archive/YYYY-MM-DD/,
+               then generate fresh
+    replace  - Delete existing artifacts (preserving .protext/archive/),
+               then generate fresh
+    update   - Regenerate PROTEXT.md and index.yaml only; preserve config.yaml,
+               scopes/, and handoff.md
+
+Without --existing, the script prints a conflict message and exits non-zero.
+No interactive prompts are used.
 """
 
 import argparse
 import os
+import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -230,7 +243,111 @@ SCOPE_DEFAULTS = {
 }
 
 
-def init_protext(project_path: Path, tier: str = "advanced") -> bool:
+def _archive_dir_for_today(protext_dir: Path) -> Path:
+    """Return a unique archive directory for today's date."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    archive_base = protext_dir / "archive"
+    archive_base.mkdir(parents=True, exist_ok=True)
+    candidate = archive_base / today
+    if not candidate.exists():
+        return candidate
+    # Append -N suffix if date dir already exists
+    n = 1
+    while True:
+        candidate = archive_base / f"{today}-{n}"
+        if not candidate.exists():
+            return candidate
+        n += 1
+
+
+def handle_existing_archive(project_path: Path) -> None:
+    """Move existing protext artifacts into a dated archive directory."""
+    protext_md = project_path / "PROTEXT.md"
+    protext_dir = project_path / ".protext"
+
+    archive_dir = _archive_dir_for_today(protext_dir)
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  Archiving existing artifacts to {archive_dir.relative_to(project_path)}/")
+
+    # Move PROTEXT.md
+    if protext_md.exists():
+        shutil.move(str(protext_md), str(archive_dir / "PROTEXT.md"))
+
+    # Move .protext/ contents (except archive/ itself)
+    if protext_dir.exists():
+        for item in protext_dir.iterdir():
+            if item.name == "archive":
+                continue
+            dest = archive_dir / item.name
+            shutil.move(str(item), str(dest))
+
+
+def handle_existing_replace(project_path: Path) -> None:
+    """Delete existing protext artifacts, preserving .protext/archive/."""
+    protext_md = project_path / "PROTEXT.md"
+    protext_dir = project_path / ".protext"
+
+    print("  Replacing existing artifacts (preserving archive/)...")
+
+    if protext_md.exists():
+        protext_md.unlink()
+
+    if protext_dir.exists():
+        for item in protext_dir.iterdir():
+            if item.name == "archive":
+                continue
+            if item.is_dir():
+                shutil.rmtree(str(item))
+            else:
+                item.unlink()
+
+
+def handle_existing_update(project_path: Path, tier: str) -> bool:
+    """Regenerate PROTEXT.md and index.yaml; preserve user-customized files."""
+    claude_md = project_path / "CLAUDE.md"
+    protext_md = project_path / "PROTEXT.md"
+    protext_dir = project_path / ".protext"
+
+    info = extract_project_info(claude_md)
+    extractions = detect_docs_structure(project_path)
+
+    print(f"Updating protext (tier: {tier})...")
+    print(f"  Project: {info['name']}")
+
+    updated = []
+    preserved = []
+
+    # Always regenerate PROTEXT.md
+    protext_content = create_protext_md(project_path, info)
+    protext_md.write_text(protext_content)
+    updated.append("PROTEXT.md")
+
+    if tier == "advanced" and protext_dir.exists():
+        # Regenerate index.yaml
+        index_path = protext_dir / "index.yaml"
+        index_path.write_text(create_index_yaml(extractions))
+        updated.append(".protext/index.yaml")
+
+        # Preserve user-customized files
+        if (protext_dir / "config.yaml").exists():
+            preserved.append(".protext/config.yaml")
+        if (protext_dir / "handoff.md").exists():
+            preserved.append(".protext/handoff.md")
+        scopes_dir = protext_dir / "scopes"
+        if scopes_dir.exists():
+            for scope_file in scopes_dir.iterdir():
+                preserved.append(f".protext/scopes/{scope_file.name}")
+
+    print(f"\n  Updated:   {', '.join(updated)}")
+    if preserved:
+        print(f"  Preserved: {', '.join(preserved)}")
+
+    print("\nProtext updated successfully!")
+    return True
+
+
+def init_protext(project_path: Path, tier: str = "advanced",
+                 existing: str = None) -> bool:
     """Initialize protext in the given project."""
 
     # Validate project path
@@ -245,13 +362,30 @@ def init_protext(project_path: Path, tier: str = "advanced") -> bool:
     # Check for existing protext
     protext_md = project_path / "PROTEXT.md"
     protext_dir = project_path / ".protext"
+    has_existing = protext_md.exists() or protext_dir.exists()
 
-    if protext_md.exists() or protext_dir.exists():
-        print("Warning: Protext already exists in this project.")
-        response = input("Overwrite? [y/N]: ").strip().lower()
-        if response != 'y':
-            print("Aborted.")
-            return False
+    if has_existing and existing is None:
+        found = []
+        if protext_md.exists():
+            found.append("PROTEXT.md")
+        if protext_dir.exists():
+            found.append(".protext/")
+        print(f"Error: Protext already exists in this project.")
+        print(f"  Found: {', '.join(found)}")
+        print()
+        print("Use --existing to specify how to handle existing artifacts:")
+        print("  --existing archive  - Archive to .protext/archive/YYYY-MM-DD/, then init fresh")
+        print("  --existing replace  - Delete existing (preserve archive/), then init fresh")
+        print("  --existing update   - Regenerate PROTEXT.md + index.yaml, keep config/scopes/handoff")
+        return False
+
+    if has_existing:
+        if existing == "update":
+            return handle_existing_update(project_path, tier)
+        elif existing == "archive":
+            handle_existing_archive(project_path)
+        elif existing == "replace":
+            handle_existing_replace(project_path)
 
     # Extract info from existing CLAUDE.md
     claude_md = project_path / "CLAUDE.md"
@@ -324,11 +458,20 @@ def main():
         default="advanced",
         help="Feature tier (default: advanced)"
     )
+    parser.add_argument(
+        "--existing",
+        choices=["archive", "replace", "update"],
+        default=None,
+        help="How to handle existing protext artifacts: "
+             "archive (move to dated backup), "
+             "replace (delete and regenerate), "
+             "update (regenerate PROTEXT.md + index.yaml only)"
+    )
 
     args = parser.parse_args()
 
     project_path = args.project_path.resolve()
-    success = init_protext(project_path, args.tier)
+    success = init_protext(project_path, args.tier, args.existing)
 
     sys.exit(0 if success else 1)
 

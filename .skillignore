@@ -9,3 +9,9 @@
 docs/
 CLAUDE.md
 PROTEXT.md
+.agent/
+.claude/
+.cursor/
+.gemini/
+.opencode/
+
