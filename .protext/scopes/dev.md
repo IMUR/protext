@@ -1,22 +1,18 @@
-# Scope: Development
+# Scope: Dev
 
 ## Focus
-Protext skill development — SKILL.md, Python scripts, reference docs, testing.
+Development workflow, code patterns, testing, debugging.
 
 ## Key Resources
-- Skill definition: `SKILL.md`
-- Init script: `scripts/init_protext.py`
-- Status script: `scripts/protext_status.py`
-- Format specs: `references/formats.md`
-- Command reference: `references/commands.md`
-- Skill creator tools: `~/.claude/skills/skill-creator/scripts/`
+- `scripts/init_protext.py` — Bootstrap protext in any project
+- `scripts/protext_status.py` — Display protext state
+- `references/formats.md` — Format specs for all protext files
+- `references/commands.md` — Command reference with examples
 
 ## Current Priorities
-1. Iterate based on real-world usage feedback
-2. Improve init script project name detection
-3. Add tests for scripts
+1. Validate: `python3 /mnt/ops/prj/skills/skills-validator/scripts/validate_skill.py /mnt/ops/prj/skills/protext`
+2. Deploy: `rsync -av --include='SKILL.md' --include='scripts/***' --include='references/***' --exclude='*' /mnt/ops/prj/skills/protext/ ~/.agent/skills/local/protext/`
 
 ## Cautions
-- Keep SKILL.md under 500 lines (skill creator guideline)
-- After changes, always re-validate with quick_validate.py
-- Deploy changes to `~/.agent/skills/local/protext/` after testing
+- `extract_project_info` pulls first heading from CLAUDE.md as project name — often wrong (e.g. "CLAUDE.md")
+- No automated test suite — validation via skills-validator is the quality gate

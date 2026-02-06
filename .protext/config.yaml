@@ -8,7 +8,7 @@ token_budget: 2000        # Max tokens per session
 handoff_ttl_hours: 48     # Time-to-live before staleness warning
 
 # Active scope (updated by protext scope command)
-active_scope: dev
+active_scope: ops
 
 # Feature flags
 features:

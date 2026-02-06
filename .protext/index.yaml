@@ -5,30 +5,6 @@ extractions:
 
   design:
     source: docs/DESIGN.md
-    triggers: [design, decision, architecture, rationale, lineage]
-    summary: "Design decisions, architecture rationale, v1→v2 lineage"
-    tokens: ~600
-
-  formats:
-    source: references/formats.md
-    triggers: [format, schema, template, yaml, structure]
-    summary: "PROTEXT.md, index.yaml, handoff.md format specifications"
-    tokens: ~800
-
-  commands:
-    source: references/commands.md
-    triggers: [command, syntax, usage, slash, invoke]
-    summary: "All protext commands with examples and natural language alternatives"
-    tokens: ~700
-
-  skill-def:
-    source: SKILL.md
-    triggers: [skill, definition, description, frontmatter]
-    summary: "Main skill definition and instructions"
-    tokens: ~800
-
-  skills-checklist:
-    source: docs/SKILLS-CHECKLIST.md
-    triggers: [checklist, cross-platform, compatibility, portable, cursor, copilot, cline, aider, windsurf]
-    summary: "Cross-platform skills best practices, compatibility matrix, validation checklist"
-    tokens: ~1500
+    triggers: ['design']
+    summary: "DESIGN documentation"
+    tokens: ~500

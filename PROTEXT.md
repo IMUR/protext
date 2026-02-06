@@ -1,29 +1,27 @@
-# Protext: Protext Dev
+# Protext: Protext
 
-> Generated: 2026-02-05 | Scope: dev | Tokens: ~400
+> Generated: 2026-02-05 | Scope: ops | Tokens: ~400
 
 ## Identity
 
-Context management skill for AI agents. Three-layer hierarchy (orientation → index → deep context) with user-invoked `/protext` injection, scopes, handoff, and token budgets.
+Protext is a dynamic, user-involved context management system for AI agents. It provides token-efficient "jumping-off point" summaries with controlled depth extraction, balancing detailed emergent con
 
 ## Current State
 
-Active: v2 initial build | Blocked: None | Recent: Skill created, validated, tested on crtr-config
+Active: Initial setup | Blocked: None | Recent: Protext initialized
 
 ## Hot Context
 
-- Skill source lives here; deployed copy at `~/.agent/skills/local/protext/`
-- Validate with: `python3 ~/.claude/skills/skill-creator/scripts/quick_validate.py .`
-- v1 archive in `.archive/` — 5 domain-specific injectors (superseded)
-- Primary UX: `/protext` slash command for cross-platform injection
-- Key limits: 5 scopes, 20 extractions, 2000 token budget, 48h handoff TTL
+- Protext just initialized - review and customize
+- Check `.protext/index.yaml` for extraction triggers
+- Update scope files in `.protext/scopes/`
 
 ## Scope Signals
 
-- `@dev` → .protext/scopes/dev.md
 - `@ops` → .protext/scopes/ops.md
-- `@deep:design` → docs/DESIGN.md
+- `@dev` → .protext/scopes/dev.md
+- `@security` → .protext/scopes/security.md
 
 ## Handoff
 
-Last: v2 skill built and validated | Next: Iterate based on real usage, refine init script project name extraction | Caution: First real deployment — expect rough edges
+Last: Protext initialized | Next: Customize hot context | Caution: Review auto-generated content

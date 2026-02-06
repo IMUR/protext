@@ -1,7 +1,7 @@
-# Scope: Ops
+# Scope: Security
 
 ## Focus
-Infrastructure management, service health, deployment, monitoring.
+Authentication, secrets management, vulnerabilities, access control.
 
 ## Key Resources
 - [Add key paths and resources]
