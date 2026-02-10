@@ -10,9 +10,10 @@ All protext commands with syntax, examples, and natural language alternatives.
 4. [protext scope](#protext-scope)
 5. [protext handoff](#protext-handoff)
 6. [protext extract](#protext-extract)
-7. [protext refresh](#protext-refresh)
-8. [Error Messages](#error-messages)
-9. [Quick Reference Card](#quick-reference-card)
+7. [protext link](#protext-link)
+8. [protext refresh](#protext-refresh)
+9. [Error Messages](#error-messages)
+10. [Quick Reference Card](#quick-reference-card)
 
 ---
 
@@ -26,6 +27,7 @@ All protext commands with syntax, examples, and natural language alternatives.
 | `protext scope` | Switch active scope | `@scope-name` |
 | `protext handoff` | Capture/show handoff | "Save session state" |
 | `protext extract` | Pull deep context | `@deep:name` |
+| `protext link` | Add cross-project link | "Link to project" |
 | `protext refresh` | Update PROTEXT.md | "Refresh the protext" |
 
 ---
@@ -400,6 +402,70 @@ You: "Yes, load it"
 
 ---
 
+## protext link
+
+Add a cross-project link to PROTEXT.md.
+
+### Syntax
+
+```
+protext link [path]
+protext link list
+protext link remove [path]
+```
+
+### Natural Language
+
+- "Link this project to ../skills-validator"
+- "Add a link to the homelab project"
+- "What projects are linked?"
+- "Remove the link to ../old-project"
+
+### Guided Flow
+
+When the user invokes `protext link [path]`:
+
+1. **Validate path** — Confirm the target directory exists. Note whether it has its own `.protext/` (but don't require it).
+2. **Ask relationship type** — Present the five types:
+   - `sibling` — Same role, different node/environment
+   - `peer` — Different role, same system
+   - `dependency` — This project depends on that one
+   - `consumer` — That project uses this one
+   - `reference` — Not connected, contextually useful
+3. **Ask for note** — One-line description of why the link matters (~80 chars).
+4. **Append** — Add the entry to the `## Links` section in PROTEXT.md.
+
+If no `## Links` section exists, create it between Scope Signals and Handoff.
+
+### Examples
+
+```
+# Add a link (guided)
+User: "protext link ../skills-validator"
+Agent: "What's the relationship? sibling | peer | dependency | consumer | reference"
+User: "peer"
+Agent: "One-line note?"
+User: "validates SKILL.md format"
+Agent: Added to PROTEXT.md:
+  - `../skills-validator` → peer | validates SKILL.md format
+
+# List links
+"protext link list"
+"What projects are linked?"
+
+# Remove
+"protext link remove ../old-project"
+```
+
+### Constraints
+
+- Maximum 5 links per project
+- Paths should be relative when possible (portable)
+- Links are one-directional — each project manages its own
+- The linked project does not need protext initialized
+
+---
+
 ## protext refresh
 
 Update PROTEXT.md hot context.
@@ -446,6 +512,8 @@ protext refresh state [new state]
 | "Max scopes reached (5)" | Too many scopes | Merge or archive existing scopes |
 | "Extraction not found: X" | Not in index.yaml | Add to `.protext/index.yaml` |
 | "Token budget exceeded" | Over 2000 tokens loaded | Use `@force-extract` or increase budget |
+| "Max links reached (5)" | Too many links | Remove one before adding |
+| "Link target not found" | Path doesn't exist | Check the path |
 | "Handoff is STALE" | > 48h since update | Capture new handoff |
 
 ### Recovery Commands
@@ -478,10 +546,11 @@ protext refresh state [new state]
 │ STATUS     protext status                           │
 │ SCOPE      @ops  @dev  @security                    │
 │ EXTRACT    @deep:network  @deep:services            │
+│ LINK       protext link [path]  (guided)            │
 │ HANDOFF    "capture handoff: [notes]"               │
 │ REFRESH    "refresh protext"                        │
 ├─────────────────────────────────────────────────────┤
-│ LIMITS     5 scopes | 20 extractions | 2000 tokens  │
+│ LIMITS     5 scopes | 5 links | 20 ext | 2000 tok   │
 │ HANDOFF    FRESH <24h | AGING 24-48h | STALE >48h   │
 └─────────────────────────────────────────────────────┘
 ```

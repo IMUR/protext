@@ -41,6 +41,9 @@ Active: [current work] | Blocked: [blockers or "None"] | Recent: [last completed
 - `@security` → .protext/scopes/security.md
 - `@deep:[name]` → Extract from .protext/index.yaml
 
+## Links
+- `[path]` → [rel-type] | [one-line note]
+
 ## Handoff
 Last: [summary of last session] | Next: [suggested next steps] | Caution: [warnings]
 ```
@@ -54,6 +57,7 @@ Last: [summary of last session] | Next: [suggested next steps] | Caution: [warni
 | Current State | 150 chars | Active/Blocked/Recent status |
 | Hot Context | 5 items, 80 chars each | Critical current context |
 | Scope Signals | 5 entries | Links to scope files |
+| Links | 5 entries, 80 chars each | Cross-project signposts |
 | Handoff | 200 chars | Session continuity |
 
 ### Example (Homelab)
@@ -80,9 +84,45 @@ Active: Caddy TLS config | Blocked: None | Recent: Pi-hole v6 migration
 - `@deep:network` → docs/NETWORK.md
 - `@deep:services` → docs/SERVICES.md
 
+## Links
+- `../drtr-homelab` → sibling | same role on drtr node
+- `/mnt/ops/prj/infra` → peer | shared Terraform modules
+
 ## Handoff
 Last: Completed Pi-hole v6 upgrade | Next: Test wildcard certs | Caution: Port 8080 in use
 ```
+
+### Links Section
+
+Cross-project signposts. Each entry points to a related project with a relationship type and brief note. These are orientation hints — the agent can follow the path to read the linked project's PROTEXT.md if context is needed.
+
+#### Format
+
+```
+- `[path]` → [rel-type] | [note]
+```
+
+- **path**: Relative or absolute path to the linked project root
+- **rel-type**: One of the five relationship types (see below)
+- **note**: One-line description of why the link matters (~80 chars max)
+
+#### Relationship Types
+
+| Type | Meaning | Example |
+|------|---------|---------|
+| `sibling` | Same role, different node/environment | crtr homelab ↔ drtr homelab |
+| `peer` | Different role, same system | protext ↔ skills-validator |
+| `dependency` | This project depends on that one | app → shared-lib |
+| `consumer` | That project uses this one | homelab → protext |
+| `reference` | Not connected, contextually useful | project → upstream docs |
+
+#### Guidelines
+
+- Max 5 links per project (same as scopes — prevent fragmentation)
+- Prefer relative paths for projects on the same filesystem
+- Links are one-directional — each project declares its own outbound links
+- The section is optional. Omit or leave empty if a project has no meaningful links.
+- Use `protext link` to add entries interactively
 
 ---
 

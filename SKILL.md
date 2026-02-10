@@ -3,9 +3,10 @@ name: protext
 description: Dynamic context management for AI agents. Invoke /protext at session
   start to load token-efficient project orientation. Use when (1) Starting a session
   and need quick orientation, (2) Handing off between sessions, (3) Managing context
-  for multi-scope projects (dev/ops/security), (4) Reducing token usage while
-  maintaining awareness. Primary command is /protext to load context. Other commands
-  include protext init, status, scope, handoff, extract.
+  for multi-scope projects (dev/ops/security), (4) Linking related projects,
+  (5) Reducing token usage while maintaining awareness. Primary command is /protext
+  to load context. Other commands include protext init, status, scope, handoff,
+  extract, link.
 ---
 
 # Protext: Dynamic Context Management
@@ -61,6 +62,9 @@ Active: [current work] | Blocked: [blockers] | Recent: [last completed]
 - `@ops` → .protext/scopes/ops.md
 - `@security` → .protext/scopes/security.md
 - `@deep:[name]` → Extract from index
+
+## Links
+- `[path]` → [rel-type] | [note]
 
 ## Handoff
 Last: [summary] | Next: [suggested] | Caution: [warnings]
@@ -147,6 +151,20 @@ Pull deep context from index.
 ```
 
 Agent receives extraction suggestion; confirm to load.
+
+### `protext link [path]`
+
+Add a cross-project link. Guided flow — agent asks for relationship type and note.
+
+```bash
+"Link this project to ../skills-validator"
+"protext link ../homelab"
+"What projects are linked?"
+```
+
+Relationship types: `sibling` (same role, different node) | `peer` (different role, same system) | `dependency` | `consumer` | `reference`
+
+Appends to `## Links` in PROTEXT.md. Max 5 links. See `references/commands.md` for full guided flow.
 
 ## Extraction Modes
 
@@ -272,6 +290,7 @@ TTL enforcement:
 | Limit | Value | Rationale |
 |-------|-------|-----------|
 | Max scopes | 5 | Prevent fragmentation |
+| Max links | 5 | Keep orientation concise |
 | Max extractions | 20 | Index stays scannable |
 | Token budget | 2000 | Default per-session limit |
 | Handoff TTL | 48h | Prevent stale guidance |

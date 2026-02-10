@@ -129,6 +129,10 @@ Active: Initial setup | Blocked: None | Recent: Protext initialized
 - `@dev` → .protext/scopes/dev.md
 - `@security` → .protext/scopes/security.md
 
+## Links
+
+<!-- Use `protext link` to add related projects. -->
+
 ## Handoff
 
 Last: Protext initialized | Next: Customize hot context | Caution: Review auto-generated content
