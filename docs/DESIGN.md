@@ -30,17 +30,20 @@ Record of architectural decisions made during Protext development.
 **Alternatives:** Pure keyword matching, Pure explicit only
 **Rationale:** Keywords alone are brittle (false positives). Explicit alone lacks discoverability. Hybrid provides reliability with progressive disclosure.
 
-### 5. Max 5 Scopes, 20 Extractions
+### 5. Max 5 Scopes, 5 Links, 20 Extractions
 
-**Decision:** Hard limits on both.
+**Decision:** Hard limits on all.
 **Alternatives:** Unlimited, Lower limits (3/10)
-**Rationale:** Prevents complexity explosion while allowing real project needs. Scopes must be orthogonal.
+**Rationale:** Prevents complexity explosion while allowing real project needs. Scopes must be orthogonal. Links prevent orientation fragmentation (v2.1).
 
-### 6. 48h Handoff TTL
+### 6. ~~48h Handoff TTL~~ **[DEPRECATED in v2.1]**
 
-**Decision:** FRESH (<24h) → AGING (24-48h) → STALE (>48h)
-**Alternatives:** No TTL, 24h TTL, 72h TTL
-**Rationale:** 48h balances freshness with weekend coverage. Three states give graduated trust levels.
+~~**Decision:** FRESH (<24h) → AGING (24-48h) → STALE (>48h)~~
+~~**Alternatives:** No TTL, 24h TTL, 72h TTL~~
+~~**Rationale:** 48h balances freshness with weekend coverage. Three states give graduated trust levels.~~
+
+**Revised (v2.1 - Feb 2026):** User-initiated handoff only, no TTL enforcement.
+**Rationale:** TTL warnings were noise for projects with long gaps between sessions. Handoff is now an optional scratchpad, not mandatory protocol. Zero auto-execution principle.
 
 ### 7. User-Invoked `/protext` as Primary Entry
 
@@ -53,6 +56,30 @@ Record of architectural decisions made during Protext development.
 **Decision:** New projects get full features (scopes, extractions, handoff).
 **Alternatives:** Beginner default with opt-in, Intermediate default
 **Rationale:** User preference. Power users want full capability immediately. Simpler tiers remain available for lightweight use cases.
+
+### 9. HTML Comment Markers for Aggregation **[v2.1]**
+
+**Decision:** Wrap sections in `<!-- marker:name -->content<!-- /marker:name -->`
+**Alternatives:** YAML front-matter per section, Custom fence syntax, No markers
+**Rationale:** Invisible to humans, parseable by parent aggregation, standard markdown syntax. Enables parent protext without breaking existing projects. Fallback to heading-based parsing for backward compatibility.
+
+### 10. One-Level Hierarchy for Parent Protext **[v2.1]**
+
+**Decision:** Parent → children only, no multi-level nesting
+**Alternatives:** Unlimited depth, Two-level (grandparent → parent → children)
+**Rationale:** Avoids recursion complexity, simpler mental model, sufficient for 99% of use cases. Can be extended later if genuine need emerges.
+
+### 11. Zero Auto-Execution Principle **[v2.1]**
+
+**Decision:** No protext operation executes without explicit user request
+**Alternatives:** Auto-refresh parent on load, Smart suggestions that auto-trigger
+**Rationale:** Predictable behavior, no surprise token costs, transparent operations. Parent never auto-refreshes — user runs `protext refresh --children` explicitly.
+
+### 12. Child Status via Modification Time **[v2.1]**
+
+**Decision:** Active (<7 days), Idle (≥7 days), Stale (no PROTEXT.md)
+**Alternatives:** Manual status tags, Presence of handoff, Explicit config field
+**Rationale:** Automatic, no manual maintenance, simple implementation. 7-day window matches typical sprint/iteration cycles.
 
 ---
 
@@ -69,3 +96,11 @@ Record of architectural decisions made during Protext development.
 - Built-in handoff protocol
 - User-invoked `/protext` command
 - Token budgets and extraction controls
+
+**v2.1 (Feb 2026):** Parent protext & refinements
+- HTML comment markers for machine-readable sections
+- Parent protext mode (hierarchical aggregation)
+- Cross-project links (7 relationship types)
+- User-initiated handoff only (no TTL enforcement)
+- Zero auto-execution principle
+- Backward-compatible marker extraction
