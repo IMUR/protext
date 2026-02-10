@@ -38,10 +38,16 @@ Key separation: `CLAUDE.md` = behavior (stable), `PROTEXT.md` = state (dynamic).
 
 ```bash
 # Validate skill structure
-python3 ~/.claude/skills/skill-creator/scripts/quick_validate.py .
+python3 ../skills-validator/scripts/validate_skill.py .
 
-# Test init on a target project
+# Test standard init
 python3 scripts/init_protext.py /path/to/project --tier advanced
+
+# Test parent init (requires children with .protext/)
+python3 scripts/init_protext.py /path/to/parent-project --parent
+
+# Test parent refresh
+python3 scripts/protext_refresh.py /path/to/parent-project --children
 
 # Check status
 python3 scripts/protext_status.py /path/to/project
@@ -67,9 +73,11 @@ python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/
 |-----------|-------|--------|
 | PROTEXT.md target | ~500 tokens | Quick orientation |
 | Max scopes | 5 per project | Prevent fragmentation |
+| Max links | 5 per project | Prevent orientation fragmentation |
 | Max extractions | 20 per project | Index stays scannable |
 | Token budget default | 2000 per session | Cost control |
-| Handoff TTL | 48h | Prevent stale guidance |
+| Handoff TTL | 48h (legacy) | No longer enforced (v2.1) |
+| Hierarchy depth | 1 level | Parent → children only |
 | SKILL.md max | ~500 lines | Skill creator guideline |
 
 ---
@@ -79,9 +87,11 @@ python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/
 | File | Purpose |
 |------|---------|
 | `SKILL.md` | Main skill definition (frontmatter + instructions) |
-| `scripts/init_protext.py` | Bootstrap protext in any project |
+| `scripts/init_protext.py` | Bootstrap protext (standard or parent mode) |
 | `scripts/protext_status.py` | Display protext state for a project |
-| `references/formats.md` | Format specs for all protext files |
+| `scripts/protext_refresh.py` | Refresh parent protext from children |
+| `references/formats.md` | Format specs (PROTEXT.md, markers, parent mode) |
 | `references/commands.md` | Command reference with examples |
-| `docs/` | Design docs and architecture decisions |
+| `docs/DESIGN.md` | Design decisions and lineage (v1 → v2 → v2.1) |
+| `NEXT-FEATURES.md` | v2.1 feature spec (markers, parent, handoff redesign) |
 | `.archive/` | Earlier v1 domain-specific injectors |
