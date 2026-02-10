@@ -173,7 +173,7 @@ Relationship types with spatial validation:
 - `sibling` — Adjacent (../name) — no aggregation
 - `peer` — Any path — no aggregation
 
-Validates path patterns. Max 5 links. See `references/commands.md` for full guided flow.
+Validates path patterns with regex enforcement (ERROR if spatial rules violated). Max 5 links. See **Spatial Validation Rules** in `references/commands.md` for pattern specs, validation flow, and edge cases.
 
 ### `protext refresh --children`
 

@@ -11,11 +11,12 @@ All protext commands with syntax, examples, and natural language alternatives.
 5. [protext handoff](#protext-handoff)
 6. [protext extract](#protext-extract)
 7. [protext link](#protext-link)
-8. [protext init --parent](#protext-init---parent)
-9. [protext refresh --children](#protext-refresh---children)
-10. [protext refresh](#protext-refresh)
-11. [Error Messages](#error-messages)
-12. [Quick Reference Card](#quick-reference-card)
+8. [Spatial Validation Rules](#spatial-validation-rules)
+9. [protext init --parent](#protext-init---parent)
+10. [protext refresh --children](#protext-refresh---children)
+11. [protext refresh](#protext-refresh)
+12. [Error Messages](#error-messages)
+13. [Quick Reference Card](#quick-reference-card)
 
 ---
 
@@ -479,6 +480,177 @@ Agent: ❌ ERROR: sibling must be adjacent (../name)
 - Paths should be relative when possible (portable)
 - Links are one-directional — each project manages its own
 - The linked project does not need protext initialized
+
+---
+
+## Spatial Validation Rules
+
+Protext enforces spatial relationship validation to ensure filesystem structure matches declared relationships. Each link type has a specific path pattern that must be satisfied.
+
+### Path Pattern Validation
+
+| Type | Pattern (Regex) | Valid Examples | Invalid Examples |
+|------|-----------------|----------------|------------------|
+| `child` | `^\.\/[^/]+$` | `./protext`, `./configs` | `protext` (no ./), `./sub/deep` (too deep), `../other` (wrong direction) |
+| `parent` | `^\.\.$\|^\.\./.*` | `..`, `../`, `../../` | `.` (self), `../sibling` (lateral move) |
+| `sibling` | `^\.\./[^/]+$` | `../dotfiles`, `../skills` | `./subdir` (child), `../../cousin` (too far) |
+| `peer` | `.*` | Any path | None (always valid) |
+
+### Validation Flow
+
+When `protext link [path]` is invoked:
+
+1. **Path existence check** — Verify target directory exists
+2. **Relationship prompt** — User selects type (child/parent/sibling/peer)
+3. **Spatial validation** — Check path matches relationship pattern
+4. **Duplicate check** — ERROR if path already exists in Links
+5. **Mutual exclusivity check** — ERROR if path linked with different type
+6. **Note prompt** — User provides one-line description
+7. **PROTEXT.md update** — Append to `## Links` section
+
+### Validation Levels
+
+| Level | Meaning | Blocks Operation | Example |
+|-------|---------|------------------|---------|
+| **ERROR** | Spatial rule violated, operation fails | ✅ Yes | `child` with path `../sibling` |
+| **WARN** | Bidirectional mismatch or missing reciprocal | ❌ No | Added `./child → child` but child has no `parent → ../` link |
+| **INFO** | Target has `.protext/` but not aggregating | ❌ No | Linked `../peer` has PROTEXT.md but relationship doesn't aggregate |
+
+### Spatial Semantics
+
+**child**: Must be a direct subdirectory
+- Pattern: `^\.\/[^/]+$` (exactly one level down)
+- Valid: `./protext`, `./configs/`, `./homelab`
+- Invalid: `protext` (missing ./), `./sub/dir` (nested), `../other` (lateral)
+- Aggregates: ✅ Yes (parent aggregates child status)
+
+**parent**: Must be an ancestor directory
+- Pattern: `^\.\.$|^\.\./.*` (upward only, any depth)
+- Valid: `..`, `../`, `../../`, `../../../ops`
+- Invalid: `.` (self), `./sub` (downward), `../sibling` (lateral at same level)
+- Aggregates: ❌ No (children don't aggregate parent status)
+
+**sibling**: Must be exactly one lateral move (adjacent directory)
+- Pattern: `^\.\./[^/]+$` (up one, down one)
+- Valid: `../dotfiles`, `../skills-validator`, `../homelab`
+- Invalid: `./subdir` (child), `../../cousin` (up two), `../sub/deep` (nested)
+- Aggregates: ❌ No (siblings are peers at same organizational level)
+- Use case: Same role, different node (e.g., crtr-config ↔ drtr-config)
+
+**peer**: No spatial constraint
+- Pattern: `.*` (any path)
+- Valid: Anything that exists
+- Aggregates: ❌ No (general relationship, no ownership)
+- Use case: Related but not hierarchically connected
+
+### Common Edge Cases
+
+**Cousin directories** (`../../parent/cousin`):
+- ❌ Fails `sibling` pattern (not adjacent)
+- ✅ Valid as `peer` instead
+- Reason: Sibling requires exactly `../name` pattern (one level lateral)
+
+**Deeply nested children** (`./sub/dir/deep`):
+- ❌ Fails `child` pattern (too deep)
+- ✅ Direct child should link to `./sub` instead
+- Reason: Hierarchy is one level only (parent → children, no grandchildren)
+
+**Self-reference** (`.` or `./`):
+- ❌ Fails all patterns
+- Reason: Linking to self has no semantic meaning
+
+**Absolute paths** (`/mnt/ops/prj/skills`):
+- ⚠️ Technically valid for `peer` pattern
+- ❌ Discouraged (not portable across nodes/environments)
+- Recommendation: Use relative paths when possible
+
+### Aggregation Rules
+
+Only `child` relationships aggregate status:
+
+```markdown
+## Child Projects
+
+### protext
+**Status:** active | **Scope:** @dev
+**Current:** Implementing spatial validation rules
+**Recent:** Added parent protext mode
+
+### skills-validator
+**Status:** active | **Scope:** @dev
+**Current:** 44-point validation checklist complete
+**Recent:** Added platform path matrix
+```
+
+Other relationships (`parent`, `sibling`, `peer`) appear in `## Links` but do not create status blocks:
+
+```markdown
+## Links
+
+- `..` → parent | Root projects directory
+- `../dotfiles` → sibling | Cluster-wide configuration (drtr/trtr variants exist)
+- `../homelab/docs` → peer | Infrastructure documentation
+```
+
+### Mutual Exclusivity
+
+Each path can only appear once in the `## Links` section, with one relationship type:
+
+**Valid:**
+```markdown
+- `../skills-validator` → sibling | SKILL.md format checker
+```
+
+**Invalid:**
+```markdown
+- `../skills-validator` → sibling | SKILL.md format checker
+- `../skills-validator` → peer | Also related project  ❌ DUPLICATE PATH
+```
+
+**Enforcement:**
+- Duplicate path detection blocks `protext link` operation
+- To change relationship: remove old link, add new one
+- Bidirectional links are separate (parent has `./child → child`, child has `.. → parent`)
+
+### Bidirectional Consistency (Optional WARN)
+
+When creating a link, protext can optionally warn if the reciprocal is missing:
+
+**Example: Adding child link**
+```
+User: "protext link ./homelab"
+Agent: "Relationship type?"
+User: "child"
+Agent: ✅ Valid child path (./name pattern)
+      "One-line note?"
+User: "Home cluster infrastructure"
+Agent: Added to PROTEXT.md
+      ⚠️  WARN: Consider adding reciprocal link in ./homelab/PROTEXT.md:
+          `.. → parent | Projects root`
+```
+
+**Note:** This is a suggestion, not an error. Links are one-directional by design.
+
+### Implementation Notes
+
+**Path normalization:**
+- Strip trailing slashes before validation: `../foo/` → `../foo`
+- Pattern `^\.\.$` handles `..` after stripping
+- Pattern `^\.\./.*` handles `../` and deeper (`../../`)
+
+**Validation order matters:**
+1. Existence check (target must exist)
+2. Relationship type selection
+3. Spatial pattern validation (type-specific)
+4. Duplicate check (path uniqueness)
+5. Note prompt (semantic context)
+6. Append to PROTEXT.md
+
+**Why spatial validation?**
+- Prevents logical errors (claiming `../sibling` is a `child`)
+- Makes relationships verifiable from filesystem structure
+- Enforces consistent semantics (sibling = adjacent, child = subdirectory)
+- Enables reliable aggregation (only `child` relationships aggregate)
 
 ---
 
