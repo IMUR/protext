@@ -188,8 +188,12 @@ extractions:
     return content
 
 
-def create_config_yaml(parent: bool = False, parent_path: str = None, children: list = None) -> str:
-    """Generate .protext/config.yaml content."""
+def create_config_yaml(parent: bool = False, parent_path: str = None) -> str:
+    """Generate .protext/config.yaml content.
+
+    Note: Children are now tracked in ## Links section of PROTEXT.md,
+    not in config.yaml.
+    """
     config = """# Protext Configuration
 
 # Extraction behavior
@@ -204,14 +208,9 @@ active_scope: ops
 
 """
 
-    # Add hierarchy fields if applicable
+    # Add parent field if applicable
     if parent_path:
         config += f"# Hierarchy\nparent: {parent_path}  # Relative path to parent protext\n\n"
-    elif parent and children:
-        config += "# Hierarchy\nchildren:  # Child protext projects\n"
-        for child in children:
-            config += f"  - {child}\n"
-        config += "\n"
 
     config += """# Feature flags
 features:
@@ -376,12 +375,63 @@ def handle_existing_update(project_path: Path, tier: str) -> bool:
     return True
 
 
-def discover_children(project_path: Path) -> list:
-    """Discover child protext projects in immediate subdirectories."""
+def discover_children_from_filesystem(project_path: Path) -> list:
+    """Discover child protext projects by scanning subdirectories.
+
+    Only returns subdirectories that have PROTEXT.md files.
+    Used during initial parent init when Links don't exist yet.
+    """
     children = []
     for item in project_path.iterdir():
-        if item.is_dir() and (item / ".protext").exists():
-            children.append(item.name)
+        if item.is_dir():
+            protext_md = item / "PROTEXT.md"
+            if protext_md.exists():
+                children.append(item.name)
+    return sorted(children)
+
+
+def discover_children_from_links(protext_md_path: Path) -> list:
+    """Extract child relationships from ## Links section.
+
+    Only returns children that have valid PROTEXT.md files.
+    """
+    if not protext_md_path.exists():
+        return []
+
+    content = protext_md_path.read_text()
+
+    # Extract Links section (try marker first, fallback to heading)
+    links_match = re.search(
+        r'<!-- marker:links -->(.*?)<!-- /marker:links -->',
+        content,
+        re.DOTALL
+    )
+
+    if not links_match:
+        # Fallback: try to find ## Links section
+        links_match = re.search(
+            r'## Links\s+(.*?)(?=\n## |\Z)',
+            content,
+            re.DOTALL
+        )
+
+    if not links_match:
+        return []
+
+    links_section = links_match.group(1)
+
+    # Find all child relationships
+    children = []
+    for line in links_section.split('\n'):
+        # Match: - `./path` → child | note
+        match = re.match(r'-\s+`(\./[^`]+)`\s+→\s+child\s+\|', line)
+        if match:
+            child_path = match.group(1).lstrip('./')
+            # Verify PROTEXT.md exists
+            full_path = protext_md_path.parent / child_path / "PROTEXT.md"
+            if full_path.exists():
+                children.append(child_path)
+
     return sorted(children)
 
 
@@ -463,6 +513,58 @@ def extract_child_info(child_path: Path) -> dict:
         "recent": recent,
         "status": status
     }
+
+
+def validate_link_path(path: str, rel_type: str) -> tuple[bool, str]:
+    """Validate path matches relationship type pattern.
+
+    Returns: (is_valid, error_message)
+    """
+    # Normalize path
+    path = path.rstrip('/')
+
+    # Path patterns for each relationship type
+    patterns = {
+        'child': r'^\.\/[^/]+$',        # ./name only (immediate subdirectory)
+        'parent': r'^\.\.$|^\.\./.*',    # .. or ../ or ../../etc (any ancestor)
+        'sibling': r'^\.\./[^/]+$',      # ../name only (adjacent, same parent)
+        'peer': r'.*'                    # Any path (catch-all)
+    }
+
+    if rel_type not in patterns:
+        return (False, f"Unknown relationship type: {rel_type}")
+
+    if not re.match(patterns[rel_type], path):
+        hints = {
+            'child': "child must be subdirectory (./name)",
+            'parent': "parent must be ancestor (../)",
+            'sibling': "sibling must be adjacent (../name)",
+        }
+        error_msg = hints.get(rel_type, "Invalid path for relationship type")
+        return (False, error_msg)
+
+    return (True, "")
+
+
+def warn_missing_reciprocal(project_path: Path, linked_path: str, rel_type: str):
+    """Warn if reciprocal link is missing in linked project.
+
+    Only checks for child → parent reciprocal (most common case).
+    """
+    if rel_type != 'child':
+        return
+
+    # Resolve child path
+    child_path = project_path / linked_path.lstrip('./')
+    child_protext = child_path / "PROTEXT.md"
+
+    if not child_protext.exists():
+        return
+
+    # Check if child has parent link
+    content = child_protext.read_text()
+    if '→ parent |' not in content:
+        print(f"  [INFO] Consider adding 'parent → ../' link in {linked_path}/PROTEXT.md")
 
 
 def create_parent_protext_md(project_path: Path, info: dict, children_info: list) -> str:
@@ -576,10 +678,10 @@ def init_protext(project_path: Path, tier: str = "advanced",
 
     # Parent mode: discover and aggregate children
     if parent:
-        children = discover_children(project_path)
+        children = discover_children_from_filesystem(project_path)
         if not children:
             print(f"Warning: No child protext projects found in {project_path}")
-            print("  (Looking for subdirectories with .protext/ directories)")
+            print("  (Looking for subdirectories with PROTEXT.md files)")
             print("  Proceeding with standard initialization...")
             parent = False  # Fall back to standard mode
         else:
@@ -603,10 +705,10 @@ def init_protext(project_path: Path, tier: str = "advanced",
             # Create .protext directory (parent only needs config, no handoff/index)
             protext_dir.mkdir(exist_ok=True)
 
-            # Create config with children list
+            # Create config (parent mode)
             config_path = protext_dir / "config.yaml"
-            config_path.write_text(create_config_yaml(parent=True, children=children))
-            print(f"  Created: .protext/config.yaml (with children list)")
+            config_path.write_text(create_config_yaml(parent=True))
+            print(f"  Created: .protext/config.yaml")
 
             # Create scope files (parent uses same scopes as children)
             scopes_dir = protext_dir / "scopes"

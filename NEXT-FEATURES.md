@@ -227,7 +227,7 @@ Add two new relationship types for hierarchy:
 | `consumer` | That project uses this one | homelab → protext |
 | `reference` | Not connected, contextually useful | project → upstream docs |
 
-**Total: 7 relationship types**
+**Total: 4 relationship types** (reduced from 7 in v2.1, simplified in v2.2)
 
 ---
 

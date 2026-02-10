@@ -429,30 +429,41 @@ protext link remove [path]
 When the user invokes `protext link [path]`:
 
 1. **Validate path** — Confirm the target directory exists. Note whether it has its own `.protext/` (but don't require it).
-2. **Ask relationship type** — Present the seven types:
-   - `child` — This is a child project (hierarchy)
-   - `parent` — This is a parent project (hierarchy)
-   - `sibling` — Same role, different node/environment
-   - `peer` — Different role, same system
-   - `dependency` — This project depends on that one
-   - `consumer` — That project uses this one
-   - `reference` — Not connected, contextually useful
-3. **Ask for note** — One-line description of why the link matters (~80 chars).
-4. **Append** — Add the entry to the `## Links` section in PROTEXT.md.
+2. **Ask relationship type** — Present the four types:
+   - `child` — Subdirectory managed by this project (must be `./name`)
+   - `parent` — Ancestor directory managing this project (must be `../`)
+   - `sibling` — Same role, different node (must be `../name`)
+   - `peer` — Related project (any path)
+3. **Validate spatial relationship** — Check path matches type pattern:
+   - `child` but path is `../foo` → ERROR: "child must be subdirectory (./name)"
+   - `sibling` but path is `../../foo` → ERROR: "sibling must be adjacent (../name)"
+4. **Check for duplicates** — ERROR if path already exists in Links section
+5. **Ask for note** — One-line description of why the link matters (~80 chars)
+6. **Append** — Add the entry to the `## Links` section in PROTEXT.md
+7. **Warn on missing reciprocal** (optional):
+   - Added `./child → child` → INFO: "Consider adding `parent → ../` to child/PROTEXT.md"
 
 If no `## Links` section exists, create it between Scope Signals and Handoff.
 
 ### Examples
 
 ```
-# Add a link (guided)
+# Add a link (guided with validation)
 User: "protext link ../skills-validator"
-Agent: "What's the relationship? child | parent | sibling | peer | dependency | consumer | reference"
-User: "peer"
-Agent: "One-line note?"
+Agent: "What's the relationship? child | parent | sibling | peer"
+User: "sibling"
+Agent: ✅ Valid sibling path (../name pattern)
+      "One-line note?"
 User: "validates SKILL.md format"
 Agent: Added to PROTEXT.md:
-  - `../skills-validator` → peer | validates SKILL.md format
+  - `../skills-validator` → sibling | validates SKILL.md format
+
+# Invalid path pattern
+User: "protext link ./subdir"
+Agent: "What's the relationship?"
+User: "sibling"
+Agent: ❌ ERROR: sibling must be adjacent (../name)
+      Path './subdir' does not match pattern for sibling
 
 # List links
 "protext link list"
@@ -489,10 +500,10 @@ protext init --parent [--tier advanced]
 
 ### Behavior
 
-1. **Scans for children** — Looks for subdirectories with `.protext/` directories
+1. **Scans for children** — Looks for subdirectories with `PROTEXT.md` files
 2. **Extracts child status** — Reads each child's PROTEXT.md (markers or headings)
 3. **Generates parent PROTEXT.md** — Includes `## Child Projects` section with aggregated status
-4. **Creates config with children list** — Tracks which projects are children
+4. **Creates child links** — Adds `./child-name → child |` entries to `## Links` section
 5. **No extraction index** — Parent doesn't have its own extractions (children do)
 6. **No handoff by default** — Parent handoff is for parent-level notes only
 
@@ -556,11 +567,11 @@ protext refresh --children
 
 **User-initiated only** — Parent protext is never auto-refreshed.
 
-1. **Validates parent** — Checks for `children:` in config.yaml
-2. **Scans for children** — Discovers child `.protext/` directories
-3. **Extracts child status** — Reads each child's PROTEXT.md with marker/heading fallback
-4. **Updates parent PROTEXT.md** — Regenerates `## Child Projects` section
-5. **Updates config children list** — Syncs with discovered children
+1. **Validates parent** — Checks for `→ child |` links in PROTEXT.md
+2. **Reads Links section** — Extracts all `child` relationship paths
+3. **Verifies children** — Ensures each child path has valid PROTEXT.md
+4. **Extracts child status** — Reads each child's PROTEXT.md with marker/heading fallback
+5. **Updates parent PROTEXT.md** — Regenerates `## Child Projects` section
 
 ### Examples
 

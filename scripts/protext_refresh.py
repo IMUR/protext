@@ -18,7 +18,7 @@ from pathlib import Path
 
 # Import parent functions from init_protext
 from init_protext import (
-    discover_children,
+    discover_children_from_links,
     extract_child_info,
     create_parent_protext_md,
     extract_project_info,
@@ -28,30 +28,32 @@ from init_protext import (
 
 
 def is_parent_protext(project_path: Path) -> bool:
-    """Check if this is a parent protext (has children in config)."""
-    config_path = project_path / ".protext" / "config.yaml"
-    if not config_path.exists():
+    """Check if this is a parent protext (has child links)."""
+    protext_md = project_path / "PROTEXT.md"
+    if not protext_md.exists():
         return False
 
-    content = config_path.read_text()
-    return "children:" in content
+    content = protext_md.read_text()
+    # Check for child relationships in Links section
+    return '→ child |' in content
 
 
 def refresh_parent(project_path: Path) -> bool:
-    """Refresh parent PROTEXT.md by re-aggregating children."""
+    """Refresh parent PROTEXT.md by re-aggregating children from Links."""
     print(f"Refreshing parent protext...")
 
     # Check for parent protext
     if not is_parent_protext(project_path):
-        print(f"Error: Not a parent protext (no children in config)")
+        print(f"Error: Not a parent protext (no child links in PROTEXT.md)")
         print(f"  Run 'protext init --parent' to initialize as parent")
         return False
 
-    # Discover children
-    children = discover_children(project_path)
+    # Discover children from Links section
+    protext_md = project_path / "PROTEXT.md"
+    children = discover_children_from_links(protext_md)
     if not children:
-        print(f"Warning: No child protext projects found")
-        print(f"  Looking for subdirectories with .protext/")
+        print(f"Warning: No valid child protext projects found in Links")
+        print(f"  Links may point to paths without PROTEXT.md files")
         return False
 
     print(f"  Found {len(children)} child projects: {', '.join(children)}")
@@ -81,33 +83,6 @@ def refresh_parent(project_path: Path) -> bool:
     protext_content = create_parent_protext_md(project_path, info, children_info)
     protext_md.write_text(protext_content)
     print(f"  Updated: PROTEXT.md")
-
-    # Update config.yaml children list
-    config_path = project_path / ".protext" / "config.yaml"
-    if config_path.exists():
-        config_content = config_path.read_text()
-        # Simple replace: find children: section and update
-        lines = config_content.split("\n")
-        new_lines = []
-        in_children_section = False
-        for line in lines:
-            if line.startswith("children:"):
-                new_lines.append("children:  # Child protext projects")
-                for child in children:
-                    new_lines.append(f"  - {child}")
-                in_children_section = True
-            elif in_children_section and line.startswith("  - "):
-                # Skip old children entries
-                continue
-            elif in_children_section and not line.startswith("  "):
-                # End of children section
-                new_lines.append(line)
-                in_children_section = False
-            else:
-                new_lines.append(line)
-
-        config_path.write_text("\n".join(new_lines))
-        print(f"  Updated: .protext/config.yaml")
 
     print("\nParent protext refreshed successfully!")
     print(f"  {sum(1 for c in children_info if c['status'] == 'active')}/{len(children_info)} children active")

@@ -128,15 +128,12 @@ Cross-project signposts. Each entry points to a related project with a relations
 
 #### Relationship Types
 
-| Type | Meaning | Example |
-|------|---------|---------|
-| `child` | This is a child project (hierarchy) | parent → child |
-| `parent` | This is a parent project (hierarchy) | child → parent |
-| `sibling` | Same role, different node/environment | crtr homelab ↔ drtr homelab |
-| `peer` | Different role, same system | protext ↔ skills-validator |
-| `dependency` | This project depends on that one | app → shared-lib |
-| `consumer` | That project uses this one | homelab → protext |
-| `reference` | Not connected, contextually useful | project → upstream docs |
+| Type | Meaning | Example | Path Pattern | Aggregates |
+|------|---------|---------|--------------|------------|
+| `child` | Subdirectory managed by this project | parent → child | `./name` only | ✅ Yes |
+| `parent` | Ancestor directory managing this project | child → parent | `../` or `../../` | ❌ No |
+| `sibling` | Same role, different node (same parent) | crtr ↔ drtr homelab | `../name` only | ❌ No |
+| `peer` | Related project (any location) | protext ↔ infra | Any path | ❌ No |
 
 #### Guidelines
 
@@ -145,7 +142,31 @@ Cross-project signposts. Each entry points to a related project with a relations
 - Links are one-directional — each project declares its own outbound links
 - The section is optional. Omit or leave empty if a project has no meaningful links.
 - Use `protext link` to add entries interactively
-- **Hierarchy types** (`child`, `parent`) take precedence over lateral types if conflicts occur
+- **Each path can only appear once** — no duplicate links regardless of type
+
+#### Spatial Validation Rules
+
+**Path patterns enforce spatial relationships:**
+
+- `child` → Must be `./name` (immediate subdirectory only)
+  - Valid: `./crtr-config`, `./subdir`
+  - Invalid: `./sub/nested` (too deep), `../sibling` (not subdirectory)
+
+- `parent` → Must be `../` or ancestor
+  - Valid: `../`, `../../grand-parent`
+  - Invalid: `./subdir` (not an ancestor)
+
+- `sibling` → Must be `../name` (exactly one lateral move)
+  - Valid: `../dotfiles`, `../peer-project`
+  - Invalid: `../parent/cousin` (different branch), `./subdir` (not lateral)
+
+- `peer` → Any path (catch-all for related projects)
+  - Valid: Any relative or absolute path
+  - No restrictions
+
+**Aggregation behavior:**
+- Only `child` links aggregate status into `## Child Projects`
+- All other types are orientation signposts only
 
 ### Machine-Readable Markers
 
@@ -408,9 +429,7 @@ active_scope: ops         # Current focus area
 
 # Hierarchy (optional)
 parent: ../               # Relative path to parent protext (child only)
-children:                 # List of child protext paths (parent only)
-  - ./protext
-  - ./skills-validator
+                         # Note: Children tracked in ## Links section, not here
 
 # Feature flags
 features:

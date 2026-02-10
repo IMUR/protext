@@ -81,6 +81,18 @@ Record of architectural decisions made during Protext development.
 **Alternatives:** Manual status tags, Presence of handoff, Explicit config field
 **Rationale:** Automatic, no manual maintenance, simple implementation. 7-day window matches typical sprint/iteration cycles.
 
+### 13. Link Validation with Spatial Constraints **[v2.2]**
+
+**Decision:** Reduce to 4 types (child/parent/sibling/peer) with path pattern validation
+**Alternatives:** Keep 7 types, No validation, Manual review only
+**Rationale:**
+- Dependency/consumer/reference were ambiguous and redundant with peer
+- Path patterns make relationships verifiable (child must be ./name, not ../foo)
+- Prevents logical errors (can't claim ../sibling is a "child")
+- Only child aggregates (ownership follows hierarchy, not association)
+- Sibling is strictly lateral (../name only, not ../parent/cousin)
+- Hierarchy lives in Links section, not config.yaml (single source of truth)
+
 ---
 
 ## Lineage
@@ -104,3 +116,10 @@ Record of architectural decisions made during Protext development.
 - User-initiated handoff only (no TTL enforcement)
 - Zero auto-execution principle
 - Backward-compatible marker extraction
+
+**v2.2 (Feb 2026):** Link validation & spatial constraints
+- Reduced link types from 7 to 4 (removed dependency/consumer/reference)
+- Path pattern validation (child=./name, sibling=../name, parent=../, peer=any)
+- Merged hierarchy into Links (removed config.yaml children field)
+- Only child links aggregate status
+- Spatial relationships enforce filesystem structure

@@ -167,9 +167,13 @@ Add a cross-project link. Guided flow — agent asks for relationship type and n
 "What projects are linked?"
 ```
 
-Relationship types: `child` (hierarchy) | `parent` (hierarchy) | `sibling` (same role, different node) | `peer` (different role, same system) | `dependency` | `consumer` | `reference`
+Relationship types with spatial validation:
+- `child` — Subdirectory (./name) — aggregates status
+- `parent` — Ancestor (../) — no aggregation
+- `sibling` — Adjacent (../name) — no aggregation
+- `peer` — Any path — no aggregation
 
-Appends to `## Links` in PROTEXT.md. Max 5 links. See `references/commands.md` for full guided flow.
+Validates path patterns. Max 5 links. See `references/commands.md` for full guided flow.
 
 ### `protext refresh --children`
 
