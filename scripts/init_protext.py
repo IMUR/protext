@@ -8,8 +8,10 @@ CLAUDE.md and creating PROTEXT.md with the full .protext/ structure.
 Usage:
     python init_protext.py <project-path> [--tier beginner|intermediate|advanced]
                                           [--existing archive|replace|update]
+                                          [--parent]
 
 Default tier: advanced (full features)
+Parent mode: Scans for child protext projects and creates aggregated parent PROTEXT.md
 
 When PROTEXT.md or .protext/ already exist, the --existing flag is required:
     archive  - Date-stamp existing artifacts to .protext/archive/YYYY-MM-DD/,
@@ -110,18 +112,21 @@ def create_protext_md(project_path: Path, info: dict) -> str:
 > Generated: {today} | Scope: ops | Tokens: ~400
 
 ## Identity
-
+<!-- marker:identity -->
 {identity}
+<!-- /marker:identity -->
 
 ## Current State
-
+<!-- marker:state -->
 Active: Initial setup | Blocked: None | Recent: Protext initialized
+<!-- /marker:state -->
 
 ## Hot Context
-
+<!-- marker:hot -->
 - Protext just initialized - review and customize
 - Check `.protext/index.yaml` for extraction triggers
 - Update scope files in `.protext/scopes/`
+<!-- /marker:hot -->
 
 ## Scope Signals
 
@@ -130,12 +135,14 @@ Active: Initial setup | Blocked: None | Recent: Protext initialized
 - `@security` → .protext/scopes/security.md
 
 ## Links
-
+<!-- marker:links -->
 <!-- Use `protext link` to add related projects. -->
+<!-- /marker:links -->
 
 ## Handoff
-
+<!-- marker:handoff -->
 Last: Protext initialized | Next: Customize hot context | Caution: Review auto-generated content
+<!-- /marker:handoff -->
 """
 
 
@@ -181,26 +188,38 @@ extractions:
     return content
 
 
-def create_config_yaml() -> str:
+def create_config_yaml(parent: bool = False, parent_path: str = None, children: list = None) -> str:
     """Generate .protext/config.yaml content."""
-    return """# Protext Configuration
+    config = """# Protext Configuration
 
 # Extraction behavior
 extraction_mode: suggest  # suggest | auto | confirm
 token_budget: 2000        # Max tokens per session
 
 # Handoff settings
-handoff_ttl_hours: 48     # Time-to-live before staleness warning
+handoff_ttl_hours: 48     # Legacy field, no longer enforced
 
 # Active scope (updated by protext scope command)
 active_scope: ops
 
-# Feature flags
+"""
+
+    # Add hierarchy fields if applicable
+    if parent_path:
+        config += f"# Hierarchy\nparent: {parent_path}  # Relative path to parent protext\n\n"
+    elif parent and children:
+        config += "# Hierarchy\nchildren:  # Child protext projects\n"
+        for child in children:
+            config += f"  - {child}\n"
+        config += "\n"
+
+    config += """# Feature flags
 features:
-  auto_handoff_capture: true
+  auto_handoff_capture: false  # Handoff is user-initiated only
   token_warnings: true
   scope_switching: true
 """
+    return config
 
 
 def create_handoff_md() -> str:
@@ -357,8 +376,161 @@ def handle_existing_update(project_path: Path, tier: str) -> bool:
     return True
 
 
+def discover_children(project_path: Path) -> list:
+    """Discover child protext projects in immediate subdirectories."""
+    children = []
+    for item in project_path.iterdir():
+        if item.is_dir() and (item / ".protext").exists():
+            children.append(item.name)
+    return sorted(children)
+
+
+def extract_marker(content: str, marker_name: str) -> str:
+    """Extract content between <!-- marker:name --> and <!-- /marker:name -->."""
+    pattern = rf"<!-- marker:{marker_name} -->(.*?)<!-- /marker:{marker_name} -->"
+    match = re.search(pattern, content, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def extract_section_fallback(content: str, section_name: str) -> str:
+    """Fallback: extract content between ## Section and next ## heading."""
+    pattern = rf"## {section_name}\s+(.*?)(?=\n## |\Z)"
+    match = re.search(pattern, content, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def get_child_status(child_protext_md: Path) -> tuple:
+    """Determine child status based on modification time.
+
+    Returns: (status_string, days_ago)
+    status_string is one of: "active", "idle", "stale"
+    """
+    if not child_protext_md.exists():
+        return ("stale", None)
+
+    mtime = child_protext_md.stat().st_mtime
+    age_seconds = datetime.now().timestamp() - mtime
+    days_ago = int(age_seconds / 86400)
+
+    if days_ago < 7:
+        return ("active", days_ago)
+    else:
+        return ("idle", days_ago)
+
+
+def extract_child_info(child_path: Path) -> dict:
+    """Extract identity, state, and recent from child PROTEXT.md."""
+    child_protext = child_path / "PROTEXT.md"
+    if not child_protext.exists():
+        return {
+            "name": child_path.name,
+            "identity": "No PROTEXT.md found",
+            "state": "Unknown",
+            "recent": "Never initialized",
+            "status": "stale"
+        }
+
+    content = child_protext.read_text()
+
+    # Try marker extraction first
+    identity = extract_marker(content, "identity")
+    state = extract_marker(content, "state")
+
+    # Fallback to heading-based extraction
+    if not identity:
+        identity = extract_section_fallback(content, "Identity")
+    if not state:
+        state = extract_section_fallback(content, "Current State")
+
+    # Extract "Recent:" from state line
+    recent = "Unknown"
+    if state:
+        recent_match = re.search(r"Recent:\s*(.+?)(?:\||$)", state)
+        if recent_match:
+            recent = recent_match.group(1).strip()
+
+    # Get child status
+    status, days = get_child_status(child_protext)
+
+    return {
+        "name": child_path.name,
+        "identity": (identity or "No identity found").replace("\n", " ")[:80],
+        "state": (state or "Unknown").replace("\n", " ")[:80],
+        "recent": recent,
+        "status": status
+    }
+
+
+def create_parent_protext_md(project_path: Path, info: dict, children_info: list) -> str:
+    """Generate parent PROTEXT.md with ## Child Projects section."""
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    identity = info.get("identity") or f"Meta-project containing {len(children_info)} child projects"
+    if len(identity) > 200:
+        identity = identity[:197] + "..."
+
+    # Build child projects section
+    child_lines = []
+    active_count = sum(1 for c in children_info if c["status"] == "active")
+    for child in children_info:
+        status_marker = f"**{child['status']}**"
+        child_lines.append(
+            f"- `./{child['name']}/` → {status_marker} | {child['identity']} | Recent: {child['recent']}"
+        )
+
+    # Aggregate hot context from active children
+    hot_items = [f"{active_count}/{len(children_info)} child projects active"]
+    for child in children_info[:3]:  # Top 3 children
+        if child["status"] == "active":
+            hot_items.append(f"{child['name']}: {child['recent']}")
+
+    return f"""# Protext: {info['name']}
+
+> Generated: {today} | Scope: ops | Tokens: ~400
+
+## Identity
+<!-- marker:identity -->
+{identity}
+<!-- /marker:identity -->
+
+## Current State
+<!-- marker:state -->
+Active: {active_count}/{len(children_info)} children active | Blocked: None | Recent: Parent protext initialized
+<!-- /marker:state -->
+
+## Hot Context
+<!-- marker:hot -->
+{chr(10).join(f"- {item}" for item in hot_items)}
+<!-- /marker:hot -->
+
+## Scope Signals
+
+- `@ops` → .protext/scopes/ops.md
+- `@dev` → .protext/scopes/dev.md
+- `@security` → .protext/scopes/security.md
+
+## Child Projects
+
+{chr(10).join(child_lines)}
+
+## Links
+<!-- marker:links -->
+{chr(10).join(f"- `./{c['name']}` → child | {c['identity'][:60]}" for c in children_info)}
+<!-- /marker:links -->
+
+## Handoff
+<!-- marker:handoff -->
+Last: Parent protext initialized | Next: Use protext refresh --children to update | Caution: First usage
+<!-- /marker:handoff -->
+"""
+
+
 def init_protext(project_path: Path, tier: str = "advanced",
-                 existing: str = None) -> bool:
+                 existing: str = None, parent: bool = False) -> bool:
     """Initialize protext in the given project."""
 
     # Validate project path
@@ -402,7 +574,56 @@ def init_protext(project_path: Path, tier: str = "advanced",
     claude_md = project_path / "CLAUDE.md"
     info = extract_project_info(claude_md, project_path)
 
-    # Detect docs for extraction index
+    # Parent mode: discover and aggregate children
+    if parent:
+        children = discover_children(project_path)
+        if not children:
+            print(f"Warning: No child protext projects found in {project_path}")
+            print("  (Looking for subdirectories with .protext/ directories)")
+            print("  Proceeding with standard initialization...")
+            parent = False  # Fall back to standard mode
+        else:
+            print(f"Initializing parent protext (tier: {tier})...")
+            print(f"  Project: {info['name']}")
+            print(f"  Found {len(children)} child projects: {', '.join(children)}")
+
+            # Extract info from each child
+            children_info = []
+            for child_name in children:
+                child_path = project_path / child_name
+                child_info = extract_child_info(child_path)
+                children_info.append(child_info)
+                print(f"    - {child_name}: {child_info['status']}")
+
+            # Create parent PROTEXT.md
+            protext_content = create_parent_protext_md(project_path, info, children_info)
+            protext_md.write_text(protext_content)
+            print(f"  Created: PROTEXT.md (parent mode)")
+
+            # Create .protext directory (parent only needs config, no handoff/index)
+            protext_dir.mkdir(exist_ok=True)
+
+            # Create config with children list
+            config_path = protext_dir / "config.yaml"
+            config_path.write_text(create_config_yaml(parent=True, children=children))
+            print(f"  Created: .protext/config.yaml (with children list)")
+
+            # Create scope files (parent uses same scopes as children)
+            scopes_dir = protext_dir / "scopes"
+            scopes_dir.mkdir(exist_ok=True)
+            for scope_name, focus in SCOPE_DEFAULTS.items():
+                scope_file = scopes_dir / f"{scope_name}.md"
+                scope_file.write_text(create_scope_file(scope_name, focus))
+                print(f"  Created: .protext/scopes/{scope_name}.md")
+
+            print("\nParent protext initialized successfully!")
+            print("\nNext steps:")
+            print("  1. Review and customize PROTEXT.md")
+            print("  2. Use 'protext refresh --children' to update child status")
+            print("  3. Consider adding parent: ../ to child config.yaml files")
+            return True
+
+    # Standard mode: detect docs for extraction index
     extractions = detect_docs_structure(project_path)
 
     print(f"Initializing protext (tier: {tier})...")
@@ -478,11 +699,16 @@ def main():
              "replace (delete and regenerate), "
              "update (regenerate PROTEXT.md + index.yaml only)"
     )
+    parser.add_argument(
+        "--parent",
+        action="store_true",
+        help="Initialize as parent protext (aggregates child protext projects)"
+    )
 
     args = parser.parse_args()
 
     project_path = args.project_path.resolve()
-    success = init_protext(project_path, args.tier, args.existing)
+    success = init_protext(project_path, args.tier, args.existing, args.parent)
 
     sys.exit(0 if success else 1)
 
