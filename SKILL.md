@@ -102,12 +102,17 @@ Last: [summary] | Next: [suggested] | Caution: [warnings]
 Initialize protext in a project. Reads existing CLAUDE.md to bootstrap.
 
 ```bash
-# In conversation
+# Standard mode
 "Initialize protext for this project"
 "Set up protext here"
+
+# Parent mode (aggregates children)
+"protext init --parent"
 ```
 
 Creates: PROTEXT.md, .protext/ directory with full structure.
+
+**Parent mode:** Scans for child `.protext/` directories, aggregates their status into `## Child Projects` section. One-level hierarchy only.
 
 ### `protext status`
 
@@ -132,14 +137,14 @@ Switch active scope context.
 
 ### `protext handoff`
 
-Capture or display session handoff.
+Capture or display session handoff. **User-initiated only** — no auto-capture, no TTL enforcement.
 
 ```bash
 "Capture handoff: stopped mid-refactor, next step is testing"
 "What was the last handoff?"
 ```
 
-Handoff auto-stales after 48h (marked `[STALE]`).
+Handoff is an optional scratchpad. Only created when user explicitly captures.
 
 ### `protext extract [name]`
 
@@ -162,9 +167,35 @@ Add a cross-project link. Guided flow — agent asks for relationship type and n
 "What projects are linked?"
 ```
 
-Relationship types: `sibling` (same role, different node) | `peer` (different role, same system) | `dependency` | `consumer` | `reference`
+Relationship types: `child` (hierarchy) | `parent` (hierarchy) | `sibling` (same role, different node) | `peer` (different role, same system) | `dependency` | `consumer` | `reference`
 
 Appends to `## Links` in PROTEXT.md. Max 5 links. See `references/commands.md` for full guided flow.
+
+### `protext refresh --children`
+
+Re-aggregate child status in parent protext. **User-initiated only** — no auto-refresh.
+
+```bash
+"protext refresh --children"
+"Update children status"
+```
+
+Scans child `.protext/` directories, extracts status from markers (or headings fallback), updates parent `## Child Projects` section.
+
+## Parent Protext
+
+Meta-projects that aggregate multiple child protexts. Created with `protext init --parent`.
+
+**Key features:**
+- `## Child Projects` section lists all children with status (active/idle/stale)
+- Child status based on PROTEXT.md modification time (< 7 days = active)
+- No extraction index (children have their own)
+- `protext refresh --children` re-aggregates (explicit user command only)
+- One-level hierarchy: parent → children only
+
+**Marker extraction:** Parent uses `<!-- marker:identity -->`, `<!-- marker:state -->` from children. Falls back to heading-based parsing if markers absent (backward compatible).
+
+**Zero auto-execution:** Parent never auto-refreshes on load. Always explicit.
 
 ## Extraction Modes
 
@@ -238,11 +269,13 @@ Infrastructure management, service health, deployment.
 
 ## Handoff Protocol
 
-`.protext/handoff.md`:
+**User-initiated only** — handoff is an optional scratchpad for session continuity.
+
+`.protext/handoff.md` format:
 
 ```markdown
 # Session Handoff
-> Updated: YYYY-MM-DDTHH:MM | TTL: 48h | Status: FRESH|STALE
+> Updated: YYYY-MM-DDTHH:MM
 
 ## Last Session
 **Completed:**
@@ -263,10 +296,11 @@ Infrastructure management, service health, deployment.
 [Observations that might help next session]
 ```
 
-TTL enforcement:
-- **FRESH** (< 24h): Full trust
-- **AGING** (24-48h): Note the age
-- **STALE** (> 48h): Warn user, suggest refresh
+Behavior:
+- No auto-capture at session end
+- No TTL warnings based on age
+- Created only when user runs `protext handoff capture`
+- Agents do not automatically update handoff
 
 ## Progressive Tiers
 
@@ -293,8 +327,9 @@ TTL enforcement:
 | Max links | 5 | Keep orientation concise |
 | Max extractions | 20 | Index stays scannable |
 | Token budget | 2000 | Default per-session limit |
-| Handoff TTL | 48h | Prevent stale guidance |
+| Handoff TTL | 48h | Legacy, no longer enforced |
 | PROTEXT.md size | ~500 tokens | Quick orientation |
+| Hierarchy depth | 1 level | Parent → children only |
 
 ## Integration Patterns
 

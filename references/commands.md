@@ -11,9 +11,11 @@ All protext commands with syntax, examples, and natural language alternatives.
 5. [protext handoff](#protext-handoff)
 6. [protext extract](#protext-extract)
 7. [protext link](#protext-link)
-8. [protext refresh](#protext-refresh)
-9. [Error Messages](#error-messages)
-10. [Quick Reference Card](#quick-reference-card)
+8. [protext init --parent](#protext-init---parent)
+9. [protext refresh --children](#protext-refresh---children)
+10. [protext refresh](#protext-refresh)
+11. [Error Messages](#error-messages)
+12. [Quick Reference Card](#quick-reference-card)
 
 ---
 
@@ -28,6 +30,8 @@ All protext commands with syntax, examples, and natural language alternatives.
 | `protext handoff` | Capture/show handoff | "Save session state" |
 | `protext extract` | Pull deep context | `@deep:name` |
 | `protext link` | Add cross-project link | "Link to project" |
+| `protext init --parent` | Initialize parent protext | "Init as parent" |
+| `protext refresh --children` | Re-aggregate children | "Refresh children" |
 | `protext refresh` | Update PROTEXT.md | "Refresh the protext" |
 
 ---
@@ -272,7 +276,7 @@ protext scope list
 
 ## protext handoff
 
-Capture or display session handoff.
+Capture or display session handoff. **User-initiated only** — handoff is an optional scratchpad for session continuity, not a mandatory protocol.
 
 ### Syntax
 
@@ -313,13 +317,12 @@ protext handoff clear              # Clear handoff
 [observations]
 ```
 
-### Status Markers
+### Behavior
 
-| Status | Age | Action |
-|--------|-----|--------|
-| FRESH | < 24h | Trust fully |
-| AGING | 24-48h | Verify critical items |
-| STALE | > 48h | Suggest refresh |
+- **No auto-capture:** Agents do not automatically update handoff at session end
+- **No TTL enforcement:** Handoff age does not trigger warnings
+- **Opt-in:** `.protext/handoff.md` is created only when user captures a handoff
+- **Read-only by default:** Viewing handoff does not modify it
 
 ### Examples
 
@@ -327,7 +330,7 @@ protext handoff clear              # Clear handoff
 # View
 "Show the last handoff"
 
-# Capture
+# Capture (explicit user request)
 "Capture handoff: completed the DNS migration, next step is testing certs"
 "Save this: stopped at Caddy config, needs Cloudflare token from Infisical"
 
@@ -426,7 +429,9 @@ protext link remove [path]
 When the user invokes `protext link [path]`:
 
 1. **Validate path** — Confirm the target directory exists. Note whether it has its own `.protext/` (but don't require it).
-2. **Ask relationship type** — Present the five types:
+2. **Ask relationship type** — Present the seven types:
+   - `child` — This is a child project (hierarchy)
+   - `parent` — This is a parent project (hierarchy)
    - `sibling` — Same role, different node/environment
    - `peer` — Different role, same system
    - `dependency` — This project depends on that one
@@ -442,7 +447,7 @@ If no `## Links` section exists, create it between Scope Signals and Handoff.
 ```
 # Add a link (guided)
 User: "protext link ../skills-validator"
-Agent: "What's the relationship? sibling | peer | dependency | consumer | reference"
+Agent: "What's the relationship? child | parent | sibling | peer | dependency | consumer | reference"
 User: "peer"
 Agent: "One-line note?"
 User: "validates SKILL.md format"
@@ -463,6 +468,134 @@ Agent: Added to PROTEXT.md:
 - Paths should be relative when possible (portable)
 - Links are one-directional — each project manages its own
 - The linked project does not need protext initialized
+
+---
+
+## protext init --parent
+
+Initialize protext in parent mode — aggregates child protext projects.
+
+### Syntax
+
+```
+protext init --parent [--tier advanced]
+```
+
+### Natural Language
+
+- "Initialize parent protext"
+- "Set up protext as parent"
+- "Create aggregating protext"
+
+### Behavior
+
+1. **Scans for children** — Looks for subdirectories with `.protext/` directories
+2. **Extracts child status** — Reads each child's PROTEXT.md (markers or headings)
+3. **Generates parent PROTEXT.md** — Includes `## Child Projects` section with aggregated status
+4. **Creates config with children list** — Tracks which projects are children
+5. **No extraction index** — Parent doesn't have its own extractions (children do)
+6. **No handoff by default** — Parent handoff is for parent-level notes only
+
+### Examples
+
+```
+# Initialize as parent
+"protext init --parent"
+
+# With explicit tier
+"protext init --parent --tier advanced"
+
+# In a directory with existing children
+cd /mnt/ops/prj
+protext init --parent
+```
+
+### Output
+
+```
+Initializing parent protext (tier: advanced)...
+  Project: Projects Root
+  Found 3 child projects: protext, skills-validator, homelab
+    - protext: active
+    - skills-validator: active
+    - homelab: idle
+  Created: PROTEXT.md (parent mode)
+  Created: .protext/config.yaml (with children list)
+  Created: .protext/scopes/ops.md
+  Created: .protext/scopes/dev.md
+  Created: .protext/scopes/security.md
+
+Parent protext initialized successfully!
+```
+
+### Constraints
+
+- **One level only** — Parent → children, no grandchildren
+- **No auto-execution** — Parent doesn't auto-refresh when loaded
+- **Children optional** — If no children found, falls back to standard init
+
+---
+
+## protext refresh --children
+
+Re-aggregate child status and update parent PROTEXT.md.
+
+### Syntax
+
+```
+protext refresh --children
+```
+
+### Natural Language
+
+- "Refresh children status"
+- "Update parent protext from children"
+- "Re-aggregate child projects"
+
+### Behavior
+
+**User-initiated only** — Parent protext is never auto-refreshed.
+
+1. **Validates parent** — Checks for `children:` in config.yaml
+2. **Scans for children** — Discovers child `.protext/` directories
+3. **Extracts child status** — Reads each child's PROTEXT.md with marker/heading fallback
+4. **Updates parent PROTEXT.md** — Regenerates `## Child Projects` section
+5. **Updates config children list** — Syncs with discovered children
+
+### Examples
+
+```
+# From parent directory
+cd /mnt/ops/prj
+protext refresh --children
+
+# Explicit path
+protext refresh /mnt/ops/prj --children
+```
+
+### Output
+
+```
+Refreshing parent protext...
+  Found 3 child projects: protext, skills-validator, homelab
+    - protext: active
+    - skills-validator: active
+    - homelab: idle
+  Updated: PROTEXT.md
+  Updated: .protext/config.yaml
+
+Parent protext refreshed successfully!
+  2/3 children active
+```
+
+### When to Use
+
+- After children have been modified
+- When adding new child projects
+- When removing child projects
+- Periodically to sync status
+
+**Zero auto-execution:** Parent never auto-refreshes on load. Always explicit user request.
 
 ---
 
@@ -514,7 +647,6 @@ protext refresh state [new state]
 | "Token budget exceeded" | Over 2000 tokens loaded | Use `@force-extract` or increase budget |
 | "Max links reached (5)" | Too many links | Remove one before adding |
 | "Link target not found" | Path doesn't exist | Check the path |
-| "Handoff is STALE" | > 48h since update | Capture new handoff |
 
 ### Recovery Commands
 

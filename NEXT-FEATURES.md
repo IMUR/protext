@@ -429,57 +429,70 @@ Then agent:
 
 ---
 
-## Open Questions
+## Design Decisions (Finalized 2026-02-10)
 
-### 1. Marker Syntax
-- HTML comments (current proposal) — invisible, parseable
-- YAML front-matter per section — more structured, visible
-- Custom `:::marker` fence — new syntax to learn
+### 1. Marker Syntax: HTML Comments ✓
+**Decision:** HTML comments (`<!-- marker:section -->`)
 
-**Decision needed:** Stick with HTML comments or explore alternatives?
-
----
-
-### 2. Parent Depth
-- One level only (parent → children)
-- Multi-level (grandparent → parent → children)
-
-**Recommendation:** Start with one level, add multi-level if needed. Multi-level adds recursion complexity.
+**Rationale:**
+- Standard markdown syntax, no new conventions
+- Invisible to human readers
+- Parseable by parent aggregation logic
+- Works with all markdown renderers
 
 ---
 
-### 3. Child Status Detection
-How does parent determine if a child is "active" vs "idle"?
+### 2. Parent Depth: One Level Only ✓
+**Decision:** Parent → children only, no multi-level nesting
 
-Options:
-- Age of last PROTEXT.md modification (< 7 days = active)
-- Explicit `<!-- marker:status -->active<!-- /marker:status -->` in child
-- Presence of non-empty handoff
-- Manual tag in child config: `status: active`
+**Rationale:**
+- Avoids recursion complexity
+- Simpler mental model
+- Sufficient for vast majority of use cases
+- Can be extended later if genuine need emerges
 
-**Recommendation:** Use modification time (simple, no manual tagging). Parent shows:
+---
+
+### 3. Child Status Detection: Modification Time ✓
+**Decision:** Detect status via PROTEXT.md modification timestamp
+
+**Logic:**
 - `**active**` if modified < 7 days
 - `**idle**` if modified ≥ 7 days
-- `**stale**` if PROTEXT.md doesn't exist (child initialized but never updated)
+- `**stale**` if PROTEXT.md missing (child initialized but never updated)
+
+**Rationale:**
+- Automatic, no manual tagging required
+- Simple implementation
+- "Active" matches typical sprint/iteration cycles
 
 ---
 
-### 4. Link Type Precedence
-If a project has both `child` link and `peer` link to the same target, which wins?
+### 4. Link Type Precedence: Hierarchy Wins ✓
+**Decision:** Hierarchy types (`child`, `parent`) take precedence over lateral types
 
-**Recommendation:** Hierarchy types (`child`, `parent`) take precedence over lateral types (`peer`, `sibling`). Validation should WARN if conflicting types detected.
+**Behavior:**
+- If both `child` and `peer` links to same target exist, `child` wins
+- Validator should WARN on conflicting types (e.g., both `child` and `peer` to same path)
+
+**Rationale:**
+- Hierarchy is structural, lateral is contextual
+- Parent/child relationships are more fundamental
 
 ---
 
-### 5. Backward Compatibility
-Existing protexts won't have markers. How to handle?
+### 5. Backward Compatibility: Best-Effort Extraction ✓
+**Decision:** Fallback to heading-based parsing when markers absent
 
-Options:
-- `protext refresh --children` fails if child lacks markers (strict)
-- Best-effort extraction (parse sections by heading, no markers needed)
-- Prompt user: "Child `./foo` has no markers. Re-initialize?"
+**Behavior:**
+- If child has markers: use them (precise extraction)
+- If child lacks markers: parse by `## Heading` (lenient fallback)
+- Log note: "Child `./foo` has no markers. Consider refreshing with `protext init --existing update`"
 
-**Recommendation:** Best-effort extraction as fallback. If markers present, use them (precise). If missing, parse by `## Heading` (lenient). Log a note that child should be refreshed.
+**Rationale:**
+- Pragmatic migration path
+- Doesn't break existing protexts
+- Encourages adoption without forcing it
 
 ---
 
@@ -507,6 +520,21 @@ These guide all implementation decisions:
 
 ---
 
-**Status:** Planning / Pre-implementation
+---
+
+## Status
+
+**Current State:** Design validated, ready for implementation
 **Last Updated:** 2026-02-10
-**Next Step:** Review and iterate on design, then begin Phase 1 implementation
+**Approved By:** User (all key design decisions finalized)
+**Next Step:** Begin Phase 1 (Markers & Handoff Redesign)
+
+### Implementation Priority
+
+**High confidence, proceed immediately:**
+- Phase 1: Markers & handoff redesign
+- Phase 2: Extended link types
+- Phase 3: Parent protext (core feature)
+
+**Lower priority, polish phase:**
+- Phase 4: Conversational interface (UX enhancement, not blocking)
