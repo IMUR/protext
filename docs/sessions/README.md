@@ -14,3 +14,4 @@ Each file documents a terminal session that was part of the multi-agent protext 
 | `trtr-config.md` | `trtr-config` (PID 2218829) | SSH to trtr | Terminator node protext deployment |
 | `dotfiles.md` | `dotfiles` (PID 2219992) | `/mnt/ops/dotfiles` | Dotfiles protext deployment + peer linking |
 | `configs-parent.md` | `configs` (PID 2222071) | `/mnt/ops/configs` | Parent protext — child aggregation and brtr linking |
+| `crtr-protext.md` | `claude` (crtr) | `/mnt/ops/prj/skills/protext` | Skill audit — binary exec bug fix, link limits, path guidance |
