@@ -76,7 +76,7 @@ Last: [summary] | Next: [suggested] | Caution: [warnings]
 
 **Load project orientation.** This is the main entry point - invoke at session start.
 
-```bash
+```text
 /protext              # Load PROTEXT.md + active scope + handoff status
 /protext @security    # Load with security scope
 /protext --full       # Include available extractions list
@@ -101,7 +101,7 @@ Last: [summary] | Next: [suggested] | Caution: [warnings]
 
 Initialize protext in a project. Reads existing CLAUDE.md to bootstrap.
 
-```bash
+```text
 # Standard mode
 "Initialize protext for this project"
 "Set up protext here"
@@ -118,7 +118,7 @@ Creates: PROTEXT.md, .protext/ directory with full structure.
 
 Display current protext state.
 
-```bash
+```text
 "Show protext status"
 "What's the current context state?"
 ```
@@ -129,7 +129,7 @@ Shows: Tier, active scope, handoff age, token budget, available extractions.
 
 Switch active scope context.
 
-```bash
+```text
 "Switch to ops scope"
 "Focus on security context"
 "@security"  # Shorthand
@@ -139,7 +139,7 @@ Switch active scope context.
 
 Capture or display session handoff. **User-initiated only** — no auto-capture, no TTL enforcement.
 
-```bash
+```text
 "Capture handoff: stopped mid-refactor, next step is testing"
 "What was the last handoff?"
 ```
@@ -150,7 +150,7 @@ Handoff is an optional scratchpad. Only created when user explicitly captures.
 
 Pull deep context from index.
 
-```bash
+```text
 "Extract network context"
 "@deep:services"  # Shorthand
 ```
@@ -161,7 +161,7 @@ Agent receives extraction suggestion; confirm to load.
 
 Add a cross-project link. Guided flow — agent asks for relationship type and note.
 
-```bash
+```text
 "Link this project to ../skills-validator"
 "protext link ../homelab"
 "What projects are linked?"
@@ -171,15 +171,17 @@ Relationship types with spatial validation:
 - `child` — Subdirectory (./name) — aggregates status
 - `parent` — Ancestor (../) — no aggregation
 - `sibling` — Adjacent (../name) — no aggregation
-- `peer` — Any path — no aggregation
+- `peer` — Any path (relative preferred) — no aggregation
 
-Validates path patterns with regex enforcement (ERROR if spatial rules violated). Max 5 links. See **Spatial Validation Rules** in `references/commands.md` for pattern specs, validation flow, and edge cases.
+**Path preference:** Use relative paths (`../sibling`, `./child`) wherever possible — they are portable across nodes and OS mount points. Absolute paths may break on machines with different prefixes (e.g., `/mnt/ops` on Linux vs `/Volumes/ops` on macOS).
+
+Validates path patterns with regex enforcement (ERROR if spatial rules violated). Max 5 lateral links. See **Spatial Validation Rules** in `references/commands.md` for pattern specs, validation flow, and edge cases.
 
 ### `protext refresh --children`
 
 Re-aggregate child status in parent protext. **User-initiated only** — no auto-refresh.
 
-```bash
+```text
 "protext refresh --children"
 "Update children status"
 ```
@@ -328,7 +330,8 @@ Behavior:
 | Limit | Value | Rationale |
 |-------|-------|-----------|
 | Max scopes | 5 | Prevent fragmentation |
-| Max links | 5 | Keep orientation concise |
+| Max lateral links | 5 | Keep peer/sibling/reference list concise |
+| Max child links | Unlimited | Structure dictates count |
 | Max extractions | 20 | Index stays scannable |
 | Token budget | 2000 | Default per-session limit |
 | Handoff TTL | 48h | Legacy, no longer enforced |

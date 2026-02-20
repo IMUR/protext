@@ -73,7 +73,8 @@ python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/
 |-----------|-------|--------|
 | PROTEXT.md target | ~500 tokens | Quick orientation |
 | Max scopes | 5 per project | Prevent fragmentation |
-| Max links | 5 per project | Prevent orientation fragmentation |
+| Max lateral links | 5 per project | Keep peer/sibling/reference list concise |
+| Max child links | Unlimited | Structure dictates count |
 | Max extractions | 20 per project | Index stays scannable |
 | Token budget default | 2000 per session | Cost control |
 | Handoff TTL | 48h (legacy) | No longer enforced (v2.1) |
