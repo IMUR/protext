@@ -100,7 +100,7 @@ protext/
 
 - Python 3.8+, zero external dependencies
 - PROTEXT.md target: ~500 tokens
-- Max 5 scopes, 5 links, 20 extractions per project
+- Max 5 scopes, 5 lateral links (peer/sibling/reference), unlimited child links, 20 extractions per project
 - Token budget: 2000 per session (default)
 - Handoff: User-initiated only (no TTL enforcement)
 - Hierarchy depth: 1 level (parent → children)

@@ -14,7 +14,7 @@ Protext is a dynamic, user-involved context management system for AI agents. It 
 - Earlier iterations (`.archive/`)
 
 **This repo does NOT contain:**
-- Deployed skill packages (those go to `~/.agent/skills/local/protext/`)
+- Deployed skill packages (canonical clone at `/mnt/ops/prj/skills/.agent/skills/protext/`, distributed via `skills-sync`)
 - Per-project protext instances (those live in each project's own `.protext/`)
 
 ---
@@ -59,7 +59,7 @@ This repo is a dev project containing non-skill files (docs/, .protext/, CLAUDE.
 
 ```bash
 # Copy skill files only to local skills directory
-rsync -av --include='SKILL.md' --include='scripts/***' --include='references/***' --exclude='*' . ~/.agent/skills/local/protext/
+rsync -av --include='SKILL.md' --include='scripts/***' --include='references/***' --exclude='*' . /mnt/ops/prj/skills/.agent/skills/protext/
 
 # Or package from the clean deploy copy
 python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/local/protext/
@@ -93,6 +93,10 @@ python3 ~/.claude/skills/skill-creator/scripts/package_skill.py ~/.agent/skills/
 | `scripts/protext_refresh.py` | Refresh parent protext from children |
 | `references/formats.md` | Format specs (PROTEXT.md, markers, parent mode) |
 | `references/commands.md` | Command reference with examples |
-| `docs/DESIGN.md` | Design decisions and lineage (v1 → v2 → v2.1) |
-| `NEXT-FEATURES.md` | v2.1 feature spec (markers, parent, handoff redesign) |
+| `docs/DESIGN.md` | Design decisions and lineage (v1 → v2 → v2.1 → v2.2) |
+| `docs/EVALUATION.md` | Skill quality evaluation (Antigravity, 2026-02-10) |
+| `docs/NEXT-FEATURES.md` | Planning doc — Phases 1–3 complete, Phase 4 (conversational interface) pending |
+| `docs/sessions/` | Session logs for protext deployment and development |
+| `GEMINI.md` | Gemini CLI agent context (high-level orientation) |
+| `README.md` | Install and usage guide |
 | `.archive/` | Earlier v1 domain-specific injectors |

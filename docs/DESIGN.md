@@ -30,11 +30,11 @@ Record of architectural decisions made during Protext development.
 **Alternatives:** Pure keyword matching, Pure explicit only
 **Rationale:** Keywords alone are brittle (false positives). Explicit alone lacks discoverability. Hybrid provides reliability with progressive disclosure.
 
-### 5. Max 5 Scopes, 5 Links, 20 Extractions
+### 5. Max 5 Scopes, 5 Lateral Links, 20 Extractions **[updated v2.2]**
 
-**Decision:** Hard limits on all.
-**Alternatives:** Unlimited, Lower limits (3/10)
-**Rationale:** Prevents complexity explosion while allowing real project needs. Scopes must be orthogonal. Links prevent orientation fragmentation (v2.1).
+**Decision:** Hard limits on scopes and lateral links; child links unlimited.
+**Alternatives:** Unlimited all, Lower limits (3/10), Hard limit on all links
+**Rationale:** Scopes must be orthogonal — 5 prevents fragmentation. Lateral links (peer/sibling/reference) are editorial choices so 5 keeps orientation concise. Child links are structural — a parent project can't be told to have fewer children than it actually has. Extractions at 20 keeps the index scannable.
 
 ### 6. ~~48h Handoff TTL~~ **[DEPRECATED in v2.1]**
 
@@ -80,6 +80,18 @@ Record of architectural decisions made during Protext development.
 **Decision:** Active (<7 days), Idle (≥7 days), Stale (no PROTEXT.md)
 **Alternatives:** Manual status tags, Presence of handoff, Explicit config field
 **Rationale:** Automatic, no manual maintenance, simple implementation. 7-day window matches typical sprint/iteration cycles.
+
+### 14. Command Block Fences: `text` not `bash` **[v2.2]**
+
+**Decision:** Conversational command examples use `text` code fences, not `bash`.
+**Alternatives:** `bash` fences, no language tag, prose-only
+**Rationale:** On Gemini Antigravity and similar platforms, agents seeing a `bash` fence treat the content as a shell command and attempt to execute it. Confirmed in production: Antigravity tried to execute `~/.gemini/antigravity/skills/protext/bin/protext` after seeing `protext` in a `bash` block in SKILL.md. `text` fences are visually identical for humans but signal non-executable content to agents.
+
+### 15. Relative Paths Preferred in Links **[v2.2]**
+
+**Decision:** Link paths should use relative notation (`../sibling`, `./child`) over absolute paths.
+**Alternatives:** Absolute paths only, No preference stated
+**Rationale:** Absolute paths break on nodes with different mount prefixes (e.g., `/mnt/ops/` on Linux vs `/Volumes/ops/` on macOS trtr). Relative paths are portable across all nodes and OS environments. Confirmed issue in real deployment: PROTEXT.md links written on Linux with `/mnt/ops/configs/trtr-config` failed to resolve on macOS trtr.
 
 ### 13. Link Validation with Spatial Constraints **[v2.2]**
 

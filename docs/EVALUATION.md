@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Protext is in a **mature, production-deployed state**. It has evolved through 4 well-documented versions (v1 → v2 → v2.1 → v2.2) and has a real-world deployment across the `configs/` cluster hierarchy (parent + 4 children + 1 peer). The skill spec is solid, the scripts work, and there is a clear next-features roadmap. Minor hygiene issues remain — stale references to deprecated behavior and a stub function — but nothing that blocks usage.
+Protext is in a **mature, production-deployed state**. It has evolved through 4 well-documented versions (v1 → v2 → v2.1 → v2.2) and has a real-world deployment across the `configs/` cluster hierarchy (parent + 5 children + 1 peer). The skill spec is solid, the scripts work, and there is a clear next-features roadmap. Minor hygiene issues remain — stale references to deprecated behavior and a stub function — but nothing that blocks usage.
 
 **Overall Grade: A-**
 
@@ -98,6 +98,7 @@ configs/ (parent)
 ├── crtr-config (child) — edge services / ingress (192.168.254.10)
 ├── drtr-config (child) — ML/inference compute (192.168.254.124)
 ├── trtr-config (child) — macOS admin console (192.168.254.134)
+├── prtr-config (child) — multi-GPU compute (192.168.254.20)
 ├── brtr-config (child) — ESP32-S3 power control (btr.ism.la)
 └── dotfiles (peer)     — Chezmoi-managed cluster dotfiles
 ```
@@ -121,7 +122,7 @@ Additionally, dotfiles has 3 peer links back to crtr/drtr/trtr-config.
 ### Deployment Notes
 
 - `rrtr-config/` exists in configs/ as an empty directory with no PROTEXT.md. Parent handoff correctly notes "rrtr-config not linked." Handled properly.
-- `brtr-config` was just linked as the 5th child, hitting the max link budget (5/5). The parent is now at capacity.
+- `brtr-config` was added as the 5th child. With dotfiles as a peer, configs/ has 6 total links (5 child + 1 peer). Child links are unlimited; the lateral link cap (5) applies to peer/sibling/reference only — configs/ is within limits.
 - Children lack reciprocal `.. → parent` links back to configs/. The spec supports it but it wasn't done during deployment.
 
 ---
@@ -202,13 +203,28 @@ These describe **v1** architecture — domain-specific injectors (`ui-ux-protext
 
 ### Low Priority
 
-1. **Address link budget** — configs/ at 5/5 links. Consider whether the limit should be raised or if this is fine
+1. ~~**Address link budget**~~ — **Resolved (2026-02-20):** Child links now unlimited; lateral links capped at 5. configs/ (5 child + 1 peer) is within limits.
 2. **Clean internal contradictions** — NEXT-FEATURES.md Phase 2 still describes 7 types (line 390) vs 4 types (line 230)
 3. **SuggestionBox KI** — v1 architecture descriptions are harmless but could confuse agents
 
 ---
 
-## 9. Version Lineage
+## 9. Post-Evaluation Fixes (2026-02-20)
+
+Following this evaluation, a skill audit session on crtr identified and resolved additional issues:
+
+| Fix | Detail |
+|-----|--------|
+| Code fence language | 8 command blocks changed `bash` → `text` in SKILL.md (both dev + deployed). Confirmed root cause: Antigravity tried to exec `~/.gemini/antigravity/skills/protext/bin/protext` |
+| Link constraint split | "Max links: 5" split into "Max lateral links: 5 / Max child links: Unlimited" in SKILL.md, CLAUDE.md |
+| Relative path guidance | Added explicit note to `protext link` section: prefer relative paths for cross-node portability |
+| EVALUATION.md accuracy | Fixed "4 children" → "5 children", added prtr-config to diagram, updated link budget note |
+
+See `docs/sessions/crtr-protext.md` for full session log.
+
+---
+
+## 10. Version Lineage
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
@@ -219,7 +235,7 @@ These describe **v1** architecture — domain-specific injectors (`ui-ux-protext
 
 ---
 
-## 10. Summary Scorecard
+## 11. Summary Scorecard
 
 | Dimension | Grade | Notes |
 |-----------|-------|-------|
