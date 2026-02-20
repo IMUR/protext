@@ -10,7 +10,7 @@ PROTEXT.md (L0)      .protext/index.yaml (L1)     Deep Context (L2)
   Always loaded          On-demand hints              Explicit extraction
 ```
 
-**Key idea:** `CLAUDE.md` defines agent *behavior* (stable). `PROTEXT.md` defines project *state* (dynamic, session-aware). Protext manages the state layer.
+**Key idea:** The platform behavior file (`CLAUDE.md` on Claude, `GEMINI.md` on Gemini, `AGENTS.md` on Codex/OpenCode) defines agent *behavior* (stable). `PROTEXT.md` defines project *state* (dynamic, session-aware). Protext manages the state layer.
 
 ## Install
 

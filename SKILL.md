@@ -22,7 +22,8 @@ PROTEXT.md (Layer 0)  →  .protext/index.yaml (Layer 1)  →  Deep Context (Lay
 ```
 
 **Separation of Concerns:**
-- `CLAUDE.md` = Agent behavior (how to act) — stable, rarely changes
+- Behavior file = Agent behavior (how to act) — stable, rarely changes
+  - `CLAUDE.md` (Claude Code) · `GEMINI.md` (Gemini CLI) · `AGENTS.md` (Codex/OpenCode)
 - `PROTEXT.md` = Project state (what's happening) — dynamic, session-aware
 
 ## File Structure
@@ -30,7 +31,7 @@ PROTEXT.md (Layer 0)  →  .protext/index.yaml (Layer 1)  →  Deep Context (Lay
 ```
 project-root/
 ├── PROTEXT.md                  # Layer 0: Orientation (~500 tokens)
-├── CLAUDE.md                   # Existing: Behavior instructions
+├── CLAUDE.md / GEMINI.md / AGENTS.md   # Existing: Behavior instructions (platform-specific)
 └── .protext/
     ├── index.yaml              # Layer 1: Extraction signposts
     ├── handoff.md              # Session continuity
@@ -340,11 +341,11 @@ Behavior:
 
 ## Integration Patterns
 
-### With CLAUDE.md
+### With Behavior Files
 
-CLAUDE.md provides behavioral instructions (stable):
+The platform behavior file (`CLAUDE.md`, `GEMINI.md`, `AGENTS.md`) provides behavioral instructions (stable):
 ```markdown
-# CLAUDE.md
+# CLAUDE.md  (or GEMINI.md / AGENTS.md)
 ## How to Work
 - Validate Caddy config before reloading
 - Never hardcode secrets
